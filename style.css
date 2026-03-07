@@ -1,0 +1,141 @@
+:root {
+  --sidebar-bg: #0f172a;
+  --main-bg: #f1f5f9;
+  --card-bg: #ffffff;
+  --accent: #2563eb;
+  --accent-hover: #3b82f6;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --sidebar-collapsed: 80px;
+  --sidebar-expanded: 240px;
+  --radius: 16px;
+  --transition: 0.3s ease;
+  --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+  background: var(--main-bg);
+  color: var(--text-main);
+}
+
+.sidebar {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: var(--sidebar-collapsed);
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 14px;
+  transition: width var(--transition);
+  overflow: hidden;
+}
+
+.sidebar:hover {
+  width: var(--sidebar-expanded);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 48px;
+  border-radius: 12px;
+  color: #cbd5e1;
+  text-decoration: none;
+  padding: 0 12px;
+  white-space: nowrap;
+  transition: background-color var(--transition), color var(--transition);
+}
+
+.menu-item .icon {
+  width: 28px;
+  text-align: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.menu-item .label {
+  opacity: 0;
+  transform: translateX(8px);
+  transition: opacity var(--transition), transform var(--transition);
+}
+
+.sidebar:hover .menu-item .label {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.menu-item:hover {
+  background: rgba(59, 130, 246, 0.16);
+  color: #ffffff;
+}
+
+.menu-item.active {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.content {
+  min-height: 100vh;
+  margin-right: var(--sidebar-collapsed);
+  padding: 40px;
+  display: grid;
+  align-items: start;
+  transition: margin-right var(--transition);
+}
+
+.sidebar:hover ~ .content {
+  margin-right: var(--sidebar-expanded);
+}
+
+.card {
+  width: min(100%, 980px);
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 32px;
+}
+
+h1 {
+  margin: 0 0 10px;
+  font-size: 1.8rem;
+}
+
+p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 1.05rem;
+}
+
+@media (max-width: 700px) {
+  .sidebar {
+    width: 64px;
+    padding-inline: 8px;
+  }
+
+  .sidebar:hover {
+    width: 210px;
+  }
+
+  .content {
+    margin-right: 64px;
+    padding: 20px;
+  }
+
+  .sidebar:hover ~ .content {
+    margin-right: 210px;
+  }
+
+  .card {
+    padding: 24px;
+  }
+}
