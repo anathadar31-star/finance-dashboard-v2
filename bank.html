@@ -3,15 +3,79 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>חשבון בנק</title>
+    <title>בנק</title>
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body>
-    <main class="container">
-      <h1>חשבון בנק</h1>
-      <p class="placeholder">בקרוב נתונים</p>
-      <a class="back-link" href="index.html">חזרה לדף הבית</a>
-    </main>
-    <script src="app.js"></script>
+  <body class="page-bank">
+    <div class="app-layout">
+      <aside class="sidebar" aria-label="ניווט ראשי">
+        <h1 class="sidebar-title">Finance 2026</h1>
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="index.html">דשבורד</a>
+          <a class="nav-link active" href="bank.html" aria-current="page">בנק</a>
+          <a class="nav-link" href="credit.html">כרטיסי אשראי</a>
+        </nav>
+      </aside>
+
+      <main class="main-content">
+        <header class="page-header">
+          <h2>חשבון בנק</h2>
+          <p>ניהול חשבונות, יתרות ותנועות מרכזיות.</p>
+        </header>
+
+        <section class="cards-grid" aria-label="כרטיסי יתרות">
+          <article class="card metric-card">
+            <h3>חשבון ראשי</h3>
+            <p class="metric">₪ 52,410</p>
+            <span class="trend up">יציב</span>
+          </article>
+          <article class="card metric-card">
+            <h3>חשבון עסקי</h3>
+            <p class="metric">₪ 31,980</p>
+            <span class="trend neutral">ללא שינוי</span>
+          </article>
+          <article class="card metric-card">
+            <h3>חיסכון נזיל</h3>
+            <p class="metric">₪ 40,190</p>
+            <span class="trend up">+1.1%</span>
+          </article>
+        </section>
+
+        <section class="card table-card" aria-label="חשבונות בנק">
+          <h3>פירוט חשבונות</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>חשבון</th>
+                <th>מספר</th>
+                <th>יתרה</th>
+                <th>סטטוס</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>פרטי</td>
+                <td>***3245</td>
+                <td>₪ 52,410</td>
+                <td><span class="badge success">פעיל</span></td>
+              </tr>
+              <tr>
+                <td>עסקי</td>
+                <td>***9981</td>
+                <td>₪ 31,980</td>
+                <td><span class="badge success">פעיל</span></td>
+              </tr>
+              <tr>
+                <td>חיסכון</td>
+                <td>***1170</td>
+                <td>₪ 40,190</td>
+                <td><span class="badge pending">מוגבל</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </main>
+    </div>
+    <script src="data-loader.js"></script>
   </body>
 </html>
