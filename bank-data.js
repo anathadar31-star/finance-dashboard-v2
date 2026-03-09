@@ -121,12 +121,9 @@
   }
 
   function applyBankData(data) {
-    const currentMonth = getCurrentMonth();
-    const bankRows = (Array.isArray(data) ? data : []).filter((row) => {
-      const source = String(row.source || "").toLowerCase();
-      const month = row.billing_month?.trim();
-      return source === "bank" && month === currentMonth;
-    });
+    const bankRows = (Array.isArray(data) ? data : []).filter(
+      (row) => String(row.source || "").toLowerCase() === "bank"
+    );
 
     renderSummary(bankRows);
     renderTransactions(bankRows);
