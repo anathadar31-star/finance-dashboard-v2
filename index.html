@@ -3,18 +3,80 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>finance-dashboard-v2</title>
+    <title>דשבורד פיננסי</title>
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body>
-    <main class="container">
-      <h1>לוח מחוונים פיננסי</h1>
-      <p class="subtitle">בחרו עמוד להצגה:</p>
-      <nav class="nav-buttons" aria-label="ניווט ראשי">
-        <a class="button" href="bank.html">חשבון בנק</a>
-        <a class="button" href="credit.html">כרטיסי אשראי</a>
-      </nav>
-    </main>
-    <script src="app.js"></script>
+  <body class="page-dashboard">
+    <div class="app-layout">
+      <aside class="sidebar" aria-label="ניווט ראשי">
+        <h1 class="sidebar-title">Finance 2026</h1>
+        <nav class="sidebar-nav">
+          <a class="nav-link active" href="index.html" aria-current="page">דשבורד</a>
+          <a class="nav-link" href="bank.html">בנק</a>
+          <a class="nav-link" href="credit.html">כרטיסי אשראי</a>
+        </nav>
+      </aside>
+
+      <main class="main-content">
+        <header class="page-header">
+          <h2>סקירה פיננסית</h2>
+          <p>תמונת מצב עדכנית של החשבונות והכרטיסים.</p>
+        </header>
+
+        <section class="cards-grid" aria-label="כרטיסי מידע">
+          <article class="card metric-card">
+            <h3>יתרה כוללת</h3>
+            <p class="metric">₪ 124,580</p>
+            <span class="trend up">+2.4% החודש</span>
+          </article>
+
+          <article class="card metric-card">
+            <h3>הוצאות חודשיות</h3>
+            <p class="metric">₪ 18,920</p>
+            <span class="trend neutral">בתקציב</span>
+          </article>
+
+          <article class="card metric-card">
+            <h3>מסגרות אשראי פנויות</h3>
+            <p class="metric">₪ 41,300</p>
+            <span class="trend up">שיפור יציבות</span>
+          </article>
+        </section>
+
+        <section class="card table-card" aria-label="תנועות אחרונות">
+          <h3>תנועות אחרונות</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>תאריך</th>
+                <th>תיאור</th>
+                <th>סכום</th>
+                <th>סטטוס</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>05/03/2026</td>
+                <td>העברה לחיסכון</td>
+                <td>₪ 2,000</td>
+                <td><span class="badge success">בוצע</span></td>
+              </tr>
+              <tr>
+                <td>04/03/2026</td>
+                <td>תשלום ספק</td>
+                <td>₪ 1,240</td>
+                <td><span class="badge pending">ממתין</span></td>
+              </tr>
+              <tr>
+                <td>03/03/2026</td>
+                <td>קבלת משכורת</td>
+                <td>₪ 14,600</td>
+                <td><span class="badge success">בוצע</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </main>
+    </div>
   </body>
 </html>
