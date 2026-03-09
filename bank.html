@@ -3,15 +3,75 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>חשבון בנק</title>
+    <title>בנק</title>
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body>
-    <main class="container">
-      <h1>חשבון בנק</h1>
-      <p class="placeholder">בקרוב נתונים</p>
-      <a class="back-link" href="index.html">חזרה לדף הבית</a>
-    </main>
-    <script src="app.js"></script>
+  <body class="page-bank">
+    <div class="app-layout">
+      <aside class="sidebar" aria-label="ניווט ראשי">
+        <h1 class="sidebar-title">Finance 2026</h1>
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="index.html">דשבורד</a>
+          <a class="nav-link active" href="bank.html" aria-current="page">בנק</a>
+          <a class="nav-link" href="credit.html">כרטיסי אשראי</a>
+        </nav>
+      </aside>
+
+      <main class="main-content">
+        <header class="page-header">
+          <h2>חשבון בנק</h2>
+          <p>ניהול חשבונות, יתרות ותנועות מרכזיות.</p>
+        </header>
+
+        <section class="cards-grid" aria-label="סיכום חודשי">
+          <article class="card metric-card">
+            <h3>הכנסות חודשיות</h3>
+            <p class="metric" id="monthly-income">₪ 0</p>
+            <span class="trend up">סה״כ הכנסות</span>
+          </article>
+          <article class="card metric-card">
+            <h3>הוצאות חודשיות</h3>
+            <p class="metric" id="monthly-expenses">₪ 0</p>
+            <span class="trend pending">סה״כ הוצאות</span>
+          </article>
+          <article class="card metric-card">
+            <h3>מאזן חודשי</h3>
+            <p class="metric" id="monthly-balance">₪ 0</p>
+            <span class="trend neutral">הכנסות פחות הוצאות</span>
+          </article>
+        </section>
+
+        <section class="card table-card" aria-label="תנועות בנק חודשיות">
+          <h3>תנועות בנק</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>תאריך</th>
+                <th>תיאור</th>
+                <th>קטגוריה חכמה</th>
+                <th>הוצאה</th>
+                <th>הכנסה</th>
+              </tr>
+            </thead>
+            <tbody id="bank-transactions-body"></tbody>
+          </table>
+        </section>
+
+        <section class="card table-card" aria-label="סיכום קטגוריות">
+          <h3>סיכום לפי קטגוריה</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>קטגוריה חכמה</th>
+                <th>סך הוצאות</th>
+              </tr>
+            </thead>
+            <tbody id="bank-categories-body"></tbody>
+          </table>
+        </section>
+      </main>
+    </div>
+    <script src="data-loader.js"></script>
+    <script src="bank-data.js"></script>
   </body>
 </html>
