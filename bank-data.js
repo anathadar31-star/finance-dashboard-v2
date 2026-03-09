@@ -133,21 +133,23 @@
     renderCategorySummary(bankRows);
   }
 
-  function init() {
-    const loader = window.financeDataPromise || Promise.resolve(window.financeData || []);
-    loader
-      .then(function (data) {
-        applyBankData(data);
-      })
-      .catch(function (error) {
-        console.error("Failed to prepare bank data:", error);
-        applyBankData([]);
-      });
+  function initBankPage() {
+    const data = window.financeData;
+    applyBankData(data);
+  }
+
+  function waitForData() {
+    if (!window.financeData || window.financeData.length === 0) {
+      setTimeout(waitForData, 100);
+      return;
+    }
+
+    initBankPage();
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+    document.addEventListener("DOMContentLoaded", waitForData);
   } else {
-    init();
+    waitForData();
   }
 })();
