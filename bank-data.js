@@ -1,4 +1,21 @@
 (function () {
+  const smartCategoryLabels = {
+    salary: "משכורת",
+    child_benefit: "קצבת ילדים",
+    tax: "מיסים",
+    insurance: "ביטוח",
+    health: "בריאות",
+    utilities: "חשבונות",
+    subscription: "מנויים",
+    loan: "הלוואות",
+    bank_fee: "עמלות בנק",
+    credit_settlement: "כרטיסי אשראי",
+    cash_withdrawal: "משיכת מזומן",
+    saving: "חיסכון",
+    transfer: "העברה",
+    refund: "זיכוי",
+  };
+
   function formatCurrency(value) {
     return new Intl.NumberFormat("he-IL", {
       style: "currency",
@@ -37,6 +54,10 @@
     }
 
     return new Date(0);
+  }
+
+  function getCategoryLabel(key) {
+    return smartCategoryLabels[key] || key;
   }
 
   function renderSummary(rows) {
@@ -78,7 +99,7 @@
           `<tr>
             <td>${row.date || ""}</td>
             <td>${row.description || ""}</td>
-            <td>${row.smart_category || ""}</td>
+            <td>${getCategoryLabel(row.smart_category || "")}</td>
             <td>${formatCurrency(toNumber(row.expense))}</td>
             <td>${formatCurrency(toNumber(row.income))}</td>
           </tr>`
@@ -86,34 +107,51 @@
       .join("");
   }
 
-  function renderCategorySummary(rows) {
-    const tbody = document.getElementById("bank-categories-body");
-    if (!tbody) {
-      return;
-    }
-
-    const totalsByCategory = rows.reduce((acc, row) => {
+  function sumBySmartCategory(rows, kind) {
+    return rows.reduce((acc, row) => {
+      if (String(row.category || "").trim().toLowerCase() !== kind) {
+        return acc;
+      }
       const key = row.smart_category || "ללא קטגוריה";
-      acc[key] = (acc[key] || 0) + toNumber(row.expense);
+      const amount = kind === "income" ? toNumber(row.income) : toNumber(row.expense);
+      acc[key] = (acc[key] || 0) + amount;
       return acc;
     }, {});
+  }
 
-    const summaryRows = Object.entries(totalsByCategory).sort((a, b) => b[1] - a[1]);
-
-    if (summaryRows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="2">אין נתוני קטגוריות לחודש הנבחר.</td></tr>';
+  function renderCategoryList(containerId, totals) {
+    const container = document.getElementById(containerId);
+    if (!container) {
       return;
     }
 
-    tbody.innerHTML = summaryRows
-      .map(
-        ([category, total]) =>
-          `<tr>
-            <td>${category}</td>
-            <td>${formatCurrency(total)}</td>
-          </tr>`
-      )
-      .join("");
+    const entries = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+    if (entries.length === 0) {
+      container.innerHTML = "<p>אין נתונים זמינים.</p>";
+      return;
+    }
+
+    container.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>קטגוריה חכמה</th>
+            <th>סכום</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${entries
+            .map(
+              ([key, total]) => `
+            <tr>
+              <td>${getCategoryLabel(key)}</td>
+              <td>${formatCurrency(total)}</td>
+            </tr>`
+            )
+            .join("")}
+        </tbody>
+      </table>
+    `;
   }
 
   function getLatestMonth(rows) {
@@ -138,9 +176,13 @@
       ? bankRows.filter((row) => String(row.billing_month || "").trim() === selectedMonth)
       : [];
 
+    const expenseTotals = sumBySmartCategory(selectedRows, "expense");
+    const incomeTotals = sumBySmartCategory(selectedRows, "income");
+
     renderSummary(selectedRows);
+    renderCategoryList("expenseCategories", expenseTotals);
+    renderCategoryList("incomeCategories", incomeTotals);
     renderTransactions(selectedRows);
-    renderCategorySummary(selectedRows);
   }
 
   function initBankPage() {
