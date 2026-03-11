@@ -39,10 +39,6 @@
     return new Date(0);
   }
 
-  function getCurrentMonth() {
-    return new Date().toISOString().slice(0, 7);
-  }
-
   function renderSummary(rows) {
     const totalIncome = rows.reduce((sum, row) => sum + toNumber(row.income), 0);
     const totalExpense = rows.reduce((sum, row) => sum + toNumber(row.expense), 0);
@@ -69,10 +65,10 @@
       return;
     }
 
-    const sorted = [...rows].sort((a, b) => parseDate(b.date) - parseDate(a.date));
+    const sorted = [...rows].sort((a, b) => parseDate(b.date) - parseDate(a.date)).slice(0, 30);
 
     if (sorted.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5">אין נתונים לחודש הנוכחי.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5">אין נתונים לחודש הנבחר.</td></tr>';
       return;
     }
 
@@ -105,7 +101,7 @@
     const summaryRows = Object.entries(totalsByCategory).sort((a, b) => b[1] - a[1]);
 
     if (summaryRows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="2">אין נתוני קטגוריות לחודש הנוכחי.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="2">אין נתוני קטגוריות לחודש הנבחר.</td></tr>';
       return;
     }
 
@@ -120,19 +116,35 @@
       .join("");
   }
 
+  function getLatestMonth(rows) {
+    const months = rows
+      .map((row) => String(row.billing_month || "").trim())
+      .filter((month) => /^\d{4}-\d{2}$/.test(month));
+
+    if (months.length === 0) {
+      return null;
+    }
+
+    return months.sort().at(-1) || null;
+  }
+
   function applyBankData(data) {
     const bankRows = (Array.isArray(data) ? data : []).filter(
-      (row) => String(row.source || "").toLowerCase() === "bank"
+      (row) => String(row.source || "").trim().toLowerCase() === "bank"
     );
 
-    renderSummary(bankRows);
-    renderTransactions(bankRows);
-    renderCategorySummary(bankRows);
+    const selectedMonth = getLatestMonth(bankRows);
+    const selectedRows = selectedMonth
+      ? bankRows.filter((row) => String(row.billing_month || "").trim() === selectedMonth)
+      : [];
+
+    renderSummary(selectedRows);
+    renderTransactions(selectedRows);
+    renderCategorySummary(selectedRows);
   }
 
   function initBankPage() {
-    const data = window.financeData;
-    applyBankData(data);
+    applyBankData(window.financeData);
   }
 
   function waitForData() {
