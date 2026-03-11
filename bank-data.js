@@ -154,10 +154,25 @@
     `;
   }
 
+
+  function normalizeMonth(value) {
+    const raw = String(value || "").trim();
+    const match = raw.match(/^(\d{4})-(\d{1,2})$/);
+    if (!match) {
+      return null;
+    }
+
+    const year = match[1];
+    const monthNumber = Number(match[2]);
+    if (!Number.isInteger(monthNumber) || monthNumber < 1 || monthNumber > 12) {
+      return null;
+    }
+
+    return `${year}-${String(monthNumber).padStart(2, "0")}`;
+  }
+
   function getLatestMonth(rows) {
-    const months = rows
-      .map((row) => String(row.billing_month || "").trim())
-      .filter((month) => /^\d{4}-\d{2}$/.test(month));
+    const months = rows.map((row) => normalizeMonth(row.billing_month)).filter(Boolean);
 
     if (months.length === 0) {
       return null;
@@ -173,7 +188,7 @@
 
     const selectedMonth = getLatestMonth(bankRows);
     const selectedRows = selectedMonth
-      ? bankRows.filter((row) => String(row.billing_month || "").trim() === selectedMonth)
+      ? bankRows.filter((row) => normalizeMonth(row.billing_month) === selectedMonth)
       : [];
 
     const expenseTotals = sumBySmartCategory(selectedRows, "expense");
