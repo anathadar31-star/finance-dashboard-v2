@@ -107,19 +107,25 @@
       .join("");
   }
 
-  function sumBySmartCategory(rows, kind) {
+  function sumBySmartCategory(rows, kind, valueField) {
     return rows.reduce((acc, row) => {
-      if (String(row.category || "").trim().toLowerCase() !== kind) {
+      const category = String(row.category || "").trim().toLowerCase();
+      if (category !== kind) {
         return acc;
       }
+
       const key = row.smart_category || "ללא קטגוריה";
-      const amount = kind === "income" ? toNumber(row.income) : toNumber(row.expense);
+      const amount = toNumber(row[valueField]);
       acc[key] = (acc[key] || 0) + amount;
       return acc;
     }, {});
   }
 
-  function renderCategoryList(containerId, totals) {
+  function getTotalFromMap(totals) {
+    return Object.values(totals).reduce((sum, value) => sum + value, 0);
+  }
+
+  function renderCategoryList(containerId, totals, grandTotal) {
     const container = document.getElementById(containerId);
     if (!container) {
       return;
@@ -137,16 +143,21 @@
           <tr>
             <th>קטגוריה חכמה</th>
             <th>סכום</th>
+            <th>אחוז מסך הכל</th>
           </tr>
         </thead>
         <tbody>
           ${entries
             .map(
-              ([key, total]) => `
+              ([key, total]) => {
+                const percentage = grandTotal > 0 ? ((total / grandTotal) * 100).toFixed(1) : "0.0";
+                return `
             <tr>
               <td>${getCategoryLabel(key)}</td>
               <td>${formatCurrency(total)}</td>
-            </tr>`
+              <td>${percentage}%</td>
+            </tr>`;
+              }
             )
             .join("")}
         </tbody>
@@ -191,12 +202,31 @@
       ? bankRows.filter((row) => normalizeMonth(row.billing_month) === selectedMonth)
       : [];
 
-    const expenseTotals = sumBySmartCategory(selectedRows, "expense");
-    const incomeTotals = sumBySmartCategory(selectedRows, "income");
+    const expenseRows = selectedRows.filter(
+      (row) => String(row.category || "").trim().toLowerCase() === "expense"
+    );
+    const incomeRows = selectedRows.filter(
+      (row) => String(row.category || "").trim().toLowerCase() === "income"
+    );
+
+    const expenseTotalsRaw = sumBySmartCategory(expenseRows, "expense", "expense");
+    const incomeTotalsRaw = sumBySmartCategory(incomeRows, "income", "income");
+
+    const expenseTotals = Object.fromEntries(
+      Object.entries(expenseTotalsRaw).filter(([, total]) => total > 0)
+    );
+    const incomeTotals = Object.fromEntries(
+      Object.entries(incomeTotalsRaw).filter(([, total]) => total > 0)
+    );
+
+    console.log("expenseTotals", expenseTotals, "salaryExists", Object.hasOwn(expenseTotals, "salary"));
+
+    const totalExpenses = getTotalFromMap(expenseTotals);
+    const totalIncome = getTotalFromMap(incomeTotals);
 
     renderSummary(selectedRows);
-    renderCategoryList("expenseCategories", expenseTotals);
-    renderCategoryList("incomeCategories", incomeTotals);
+    renderCategoryList("expenseCategories", expenseTotals, totalExpenses);
+    renderCategoryList("incomeCategories", incomeTotals, totalIncome);
     renderTransactions(selectedRows);
   }
 
