@@ -24,16 +24,6 @@
     }).format(value);
   }
 
-  function toNumber(value) {
-    if (value === null || value === undefined) {
-      return 0;
-    }
-
-    const normalized = String(value).replace(/[,\s₪]/g, "").trim();
-    const numeric = Number(normalized);
-    return Number.isFinite(numeric) ? numeric : 0;
-  }
-
   function parseDate(value) {
     if (!value) {
       return new Date(0);
@@ -56,78 +46,51 @@
     return new Date(0);
   }
 
+  function normalizeMonth(value) {
+    const raw = String(value || "").trim();
+    const match = raw.match(/^(\d{4})-(\d{1,2})$/);
+    if (!match) {
+      return null;
+    }
+
+    return `${match[1]}-${String(Number(match[2])).padStart(2, "0")}`;
+  }
+
+  function getLatestMonth(rows) {
+    const months = (Array.isArray(rows) ? rows : [])
+      .map((row) => normalizeMonth(row.billing_month))
+      .filter(Boolean);
+    return months.length ? months.sort().at(-1) : null;
+  }
+
   function getCategoryLabel(key) {
     const normalizedKey = String(key || "").trim();
     return smartCategoryLabels[normalizedKey] || normalizedKey;
   }
 
-  function renderSummary(rows) {
-    const totalIncome = rows.reduce((sum, row) => sum + toNumber(row.income), 0);
-    const totalExpense = rows.reduce((sum, row) => sum + toNumber(row.expense), 0);
-    const balance = totalIncome - totalExpense;
-
+  function renderSummary(model) {
     const incomeEl = document.getElementById("monthly-income");
     const expenseEl = document.getElementById("monthly-expenses");
     const balanceEl = document.getElementById("monthly-balance");
 
     if (incomeEl) {
-      incomeEl.textContent = formatCurrency(totalIncome);
+      incomeEl.textContent = formatCurrency(model.totalIncome);
     }
     if (expenseEl) {
-      expenseEl.textContent = formatCurrency(totalExpense);
+      expenseEl.textContent = formatCurrency(model.totalExpenses);
     }
     if (balanceEl) {
-      balanceEl.textContent = formatCurrency(balance);
+      balanceEl.textContent = formatCurrency(model.net);
     }
   }
 
-  function renderTransactions(rows) {
-    const tbody = document.getElementById("bank-transactions-body");
-    if (!tbody) {
-      return;
-    }
-
-    const sorted = [...rows].sort((a, b) => parseDate(b.date) - parseDate(a.date)).slice(0, 30);
-
-    if (sorted.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5">אין נתונים לחודש הנבחר.</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = sorted
-      .map(
-        (row) =>
-          `<tr>
-            <td>${row.date || ""}</td>
-            <td>${row.description || ""}</td>
-            <td>${getCategoryLabel(String(row.smart_category || "").trim())}</td>
-            <td>${formatCurrency(toNumber(row.expense))}</td>
-            <td>${formatCurrency(toNumber(row.income))}</td>
-          </tr>`
-      )
-      .join("");
-  }
-
-  function sumBySmartCategory(rows, valueField) {
-    return rows.reduce((acc, row) => {
-      const key = String(row.smart_category || "").trim() || "ללא קטגוריה";
-      const amount = toNumber(row[valueField]);
-      acc[key] = (acc[key] || 0) + amount;
-      return acc;
-    }, {});
-  }
-
-  function getTotalFromMap(totals) {
-    return Object.values(totals).reduce((sum, value) => sum + value, 0);
-  }
-
-  function renderCategoryList(containerId, totals, grandTotal) {
+  function renderCategoryList(containerId, totals, percentages) {
     const container = document.getElementById(containerId);
     if (!container) {
       return;
     }
 
-    const entries = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+    const entries = Object.entries(totals || {}).sort((a, b) => b[1] - a[1]);
     if (entries.length === 0) {
       container.innerHTML = "<p>אין נתונים זמינים.</p>";
       return;
@@ -144,113 +107,73 @@
         </thead>
         <tbody>
           ${entries
-            .map(
-              ([key, total]) => {
-                const percentage = grandTotal > 0 ? ((total / grandTotal) * 100).toFixed(1) : "0.0";
-                return `
+            .map(([key, total]) => {
+              const percentage = Number(percentages?.[key] || 0).toFixed(1);
+              return `
             <tr>
               <td>${getCategoryLabel(key)}</td>
               <td>${formatCurrency(total)}</td>
               <td>${percentage}%</td>
             </tr>`;
-              }
-            )
+            })
             .join("")}
         </tbody>
       </table>
     `;
   }
 
-
-  function normalizeMonth(value) {
-    const raw = String(value || "").trim();
-    const match = raw.match(/^(\d{4})-(\d{1,2})$/);
-    if (!match) {
-      return null;
-    }
-
-    const year = match[1];
-    const monthNumber = Number(match[2]);
-    if (!Number.isInteger(monthNumber) || monthNumber < 1 || monthNumber > 12) {
-      return null;
-    }
-
-    return `${year}-${String(monthNumber).padStart(2, "0")}`;
-  }
-
-
-  function getNormalizedCategory(row) {
-    const category = String(row.category || "").trim().toLowerCase();
-    const smartCategory = String(row.smart_category || "").trim().toLowerCase();
-
-    if (smartCategory === "salary" && toNumber(row.income) > 0) {
-      return "income";
-    }
-
-    return category;
-  }
-
-  function getLatestMonth(rows) {
-    const months = rows.map((row) => normalizeMonth(row.billing_month)).filter(Boolean);
-
-    if (months.length === 0) {
-      return null;
-    }
-
-    return months.sort().at(-1) || null;
-  }
-
-  function applyBankData(data) {
-    const bankRows = (Array.isArray(data) ? data : []).filter(
-      (row) => String(row.source || "").trim().toLowerCase() === "bank"
-    );
-
-    const selectedMonth = getLatestMonth(bankRows);
-    const selectedRows = selectedMonth
-      ? bankRows.filter((row) => normalizeMonth(row.billing_month) === selectedMonth)
-      : [];
-
-    const expenseRows = selectedRows.filter((row) => getNormalizedCategory(row) === "expense");
-    const incomeRows = selectedRows.filter((row) => getNormalizedCategory(row) === "income");
-
-    const expenseTotalsRaw = sumBySmartCategory(expenseRows, "expense");
-    const incomeTotalsRaw = sumBySmartCategory(incomeRows, "income");
-
-    const expenseTotals = Object.fromEntries(
-      Object.entries(expenseTotalsRaw).filter(([, total]) => total > 0)
-    );
-    const incomeTotals = Object.fromEntries(
-      Object.entries(incomeTotalsRaw).filter(([, total]) => total > 0)
-    );
-
-    console.log("expenseTotals", expenseTotals, "salaryExists", Object.hasOwn(expenseTotals, "salary"));
-    console.log("incomeTotals", incomeTotals, "salaryExists", Object.hasOwn(incomeTotals, "salary"));
-
-    const totalExpenses = getTotalFromMap(expenseTotals);
-    const totalIncome = getTotalFromMap(incomeTotals);
-
-    renderSummary(selectedRows);
-    renderCategoryList("expenseCategories", expenseTotals, totalExpenses);
-    renderCategoryList("incomeCategories", incomeTotals, totalIncome);
-    renderTransactions(selectedRows);
-  }
-
-  function initBankPage() {
-    applyBankData(window.financeData);
-  }
-
-  function waitForData() {
-    if (!window.financeData || window.financeData.length === 0) {
-      setTimeout(waitForData, 100);
+  function renderTransactions(rows) {
+    const tbody = document.getElementById("bank-transactions-body");
+    if (!tbody) {
       return;
     }
 
-    initBankPage();
+    const sorted = [...(Array.isArray(rows) ? rows : [])]
+      .sort((a, b) => parseDate(b.date) - parseDate(a.date))
+      .slice(0, 30);
+
+    if (sorted.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5">אין נתונים לחודש הנבחר.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = sorted
+      .map(
+        (row) =>
+          `<tr>
+            <td>${row.date || ""}</td>
+            <td>${row.description || ""}</td>
+            <td>${getCategoryLabel(String(row.smart_category || "").trim())}</td>
+            <td>${formatCurrency(Number(String(row.expense || "0").replace(/[,\s₪]/g, "") || 0))}</td>
+            <td>${formatCurrency(Number(String(row.income || "0").replace(/[,\s₪]/g, "") || 0))}</td>
+          </tr>`
+      )
+      .join("");
+  }
+
+  function renderBankPage(model) {
+    console.log("model", model);
+    renderSummary(model);
+    renderCategoryList("expenseCategories", model.expenseBreakdown, model.expensePercentages);
+    renderCategoryList("incomeCategories", model.incomeBreakdown, model.incomePercentages);
+    renderTransactions(model.transactions);
+  }
+
+  function init() {
+    window.loadCSVData().then((data) => {
+      const bankRows = (Array.isArray(data) ? data : []).filter(
+        (row) => String(row.source || "").trim().toLowerCase() === "bank"
+      );
+
+      const month = getLatestMonth(bankRows);
+      const model = window.buildMonthlyModel(bankRows, month);
+      renderBankPage(model);
+    });
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", waitForData);
+    document.addEventListener("DOMContentLoaded", init);
   } else {
-    waitForData();
+    init();
   }
 })();
