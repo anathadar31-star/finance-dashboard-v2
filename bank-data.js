@@ -24,43 +24,10 @@
     }).format(value);
   }
 
-  function parseDate(value) {
-    if (!value) {
-      return new Date(0);
-    }
-
-    const iso = new Date(value);
-    if (!Number.isNaN(iso.getTime())) {
-      return iso;
-    }
-
-    const parts = String(value).split(/[\/.-]/);
-    if (parts.length === 3) {
-      const [day, month, year] = parts.map((part) => Number(part));
-      const d = new Date(year, month - 1, day);
-      if (!Number.isNaN(d.getTime())) {
-        return d;
-      }
-    }
-
-    return new Date(0);
-  }
-
-  function normalizeMonth(value) {
-    const raw = String(value || "").trim();
-    const match = raw.match(/^(\d{4})-(\d{1,2})$/);
-    if (!match) {
-      return null;
-    }
-
-    return `${match[1]}-${String(Number(match[2])).padStart(2, "0")}`;
-  }
-
-  function getLatestMonth(rows) {
-    const months = (Array.isArray(rows) ? rows : [])
-      .map((row) => normalizeMonth(row.billing_month))
-      .filter(Boolean);
-    return months.length ? months.sort().at(-1) : null;
+  function toNumber(value) {
+    const normalized = String(value || "0").replace(/[,\s₪]/g, "").trim();
+    const numeric = Number(normalized);
+    return Number.isFinite(numeric) ? numeric : 0;
   }
 
   function getCategoryLabel(key) {
@@ -74,13 +41,13 @@
     const balanceEl = document.getElementById("monthly-balance");
 
     if (incomeEl) {
-      incomeEl.textContent = formatCurrency(model.totalIncome);
+      incomeEl.textContent = formatCurrency(model.totals.income);
     }
     if (expenseEl) {
-      expenseEl.textContent = formatCurrency(model.totalExpenses);
+      expenseEl.textContent = formatCurrency(model.totals.expense);
     }
     if (balanceEl) {
-      balanceEl.textContent = formatCurrency(model.net);
+      balanceEl.textContent = formatCurrency(model.totals.net);
     }
   }
 
@@ -128,24 +95,22 @@
       return;
     }
 
-    const sorted = [...(Array.isArray(rows) ? rows : [])]
-      .sort((a, b) => parseDate(b.date) - parseDate(a.date))
-      .slice(0, 30);
+    const transactions = Array.isArray(rows) ? rows : [];
 
-    if (sorted.length === 0) {
+    if (transactions.length === 0) {
       tbody.innerHTML = '<tr><td colspan="5">אין נתונים לחודש הנבחר.</td></tr>';
       return;
     }
 
-    tbody.innerHTML = sorted
+    tbody.innerHTML = transactions
       .map(
         (row) =>
           `<tr>
             <td>${row.date || ""}</td>
             <td>${row.description || ""}</td>
             <td>${getCategoryLabel(String(row.smart_category || "").trim())}</td>
-            <td>${formatCurrency(Number(String(row.expense || "0").replace(/[,\s₪]/g, "") || 0))}</td>
-            <td>${formatCurrency(Number(String(row.income || "0").replace(/[,\s₪]/g, "") || 0))}</td>
+            <td>${formatCurrency(toNumber(row.expense))}</td>
+            <td>${formatCurrency(toNumber(row.income))}</td>
           </tr>`
       )
       .join("");
@@ -154,19 +119,14 @@
   function renderBankPage(model) {
     console.log("model", model);
     renderSummary(model);
-    renderCategoryList("expenseCategories", model.expenseBreakdown, model.expensePercentages);
-    renderCategoryList("incomeCategories", model.incomeBreakdown, model.incomePercentages);
+    renderCategoryList("expenseCategories", model.breakdown.expense, model.percentages.expense);
+    renderCategoryList("incomeCategories", model.breakdown.income, model.percentages.income);
     renderTransactions(model.transactions);
   }
 
   function init() {
     window.loadCSVData().then((data) => {
-      const bankRows = (Array.isArray(data) ? data : []).filter(
-        (row) => String(row.source || "").trim().toLowerCase() === "bank"
-      );
-
-      const month = getLatestMonth(bankRows);
-      const model = window.buildMonthlyModel(bankRows, month);
+      const model = window.buildMonthlyModel(data, { source: "bank" });
       renderBankPage(model);
     });
   }

@@ -79,10 +79,7 @@
     if (window.financeDataPromise) {
       return window.financeDataPromise.then((rows) => {
         const resolvedRows = Array.isArray(rows) ? rows : [];
-        if (resolvedRows.length > 0) {
-          return resolvedRows;
-        }
-        return waitForFinanceData();
+        return resolvedRows.length > 0 ? resolvedRows : waitForFinanceData();
       });
     }
 
@@ -100,6 +97,37 @@
     );
   }
 
+  function filterBySource(data, source) {
+    const selectedSource = String(source || "all").trim().toLowerCase();
+    if (selectedSource === "all") {
+      return Array.isArray(data) ? [...data] : [];
+    }
+
+    return (Array.isArray(data) ? data : []).filter(
+      (row) => String(row.source || "").trim().toLowerCase() === selectedSource
+    );
+  }
+
+  function filterByFlowType(data, flow) {
+    const selectedFlow = String(flow || "all").trim().toLowerCase();
+    if (selectedFlow === "all") {
+      return Array.isArray(data) ? [...data] : [];
+    }
+
+    return (Array.isArray(data) ? data : []).filter(
+      (row) => getNormalizedCategory(row) === selectedFlow
+    );
+  }
+
+  function getLatestMonth(data) {
+    const months = (Array.isArray(data) ? data : [])
+      .map((row) => normalizeMonth(row.billing_month))
+      .filter(Boolean)
+      .sort();
+
+    return months.length ? months[months.length - 1] : null;
+  }
+
   function calculateKPIs(data) {
     const totalIncome = (Array.isArray(data) ? data : []).reduce(
       (sum, row) => sum + toNumber(row.income),
@@ -111,8 +139,8 @@
     );
 
     return {
-      totalIncome,
-      totalExpenses,
+      income: totalIncome,
+      expense: totalExpenses,
       net: totalIncome - totalExpenses,
     };
   }
@@ -142,21 +170,70 @@
     );
   }
 
-  function buildMonthlyModel(data, month) {
-    const monthlyRows = filterByMonth(data, month);
-    const kpis = calculateKPIs(monthlyRows);
-    const expenseBreakdown = calculateCategoryBreakdown(monthlyRows, "expense");
-    const incomeBreakdown = calculateCategoryBreakdown(monthlyRows, "income");
+  function buildDrilldown(data, type) {
+    const rows = (Array.isArray(data) ? data : []).filter(
+      (row) => getNormalizedCategory(row) === type
+    );
+    const valueField = type === "income" ? "income" : "expense";
+
+    return rows.reduce((acc, row) => {
+      const smartCategory = String(row.smart_category || "").trim() || "ללא קטגוריה";
+      const accountName = String(row.account_name || "").trim() || "לא ידוע";
+      const amount = toNumber(row[valueField]);
+      if (amount <= 0) {
+        return acc;
+      }
+
+      if (!acc[smartCategory]) {
+        acc[smartCategory] = {};
+      }
+      acc[smartCategory][accountName] = (acc[smartCategory][accountName] || 0) + amount;
+      return acc;
+    }, {});
+  }
+
+  function normalizeOptions(optionsOrMonth) {
+    if (typeof optionsOrMonth === "string") {
+      return { month: optionsOrMonth };
+    }
+
+    return optionsOrMonth && typeof optionsOrMonth === "object" ? optionsOrMonth : {};
+  }
+
+  function buildMonthlyModel(data, optionsOrMonth) {
+    const options = normalizeOptions(optionsOrMonth);
+    const source = options.source || "all";
+    const flow = options.flow || options.type || "all";
+
+    const sourceFiltered = filterBySource(data, source);
+    const month = normalizeMonth(options.month) || getLatestMonth(sourceFiltered);
+    const monthFiltered = month ? filterByMonth(sourceFiltered, month) : [];
+    const filteredRows = filterByFlowType(monthFiltered, flow);
+
+    const totals = calculateKPIs(filteredRows);
+    const expenseBreakdown = calculateCategoryBreakdown(filteredRows, "expense");
+    const incomeBreakdown = calculateCategoryBreakdown(filteredRows, "income");
 
     return {
-      totalIncome: kpis.totalIncome,
-      totalExpenses: kpis.totalExpenses,
-      net: kpis.net,
-      expenseBreakdown,
-      incomeBreakdown,
-      transactions: [...monthlyRows].sort((a, b) => parseDate(b.date) - parseDate(a.date)).slice(0, 30),
-      expensePercentages: calculatePercentages(expenseBreakdown, kpis.totalExpenses),
-      incomePercentages: calculatePercentages(incomeBreakdown, kpis.totalIncome),
+      totals,
+      breakdown: {
+        expense: expenseBreakdown,
+        income: incomeBreakdown,
+      },
+      drilldown: {
+        expense: buildDrilldown(filteredRows, "expense"),
+        income: buildDrilldown(filteredRows, "income"),
+      },
+      transactions: [...filteredRows].sort((a, b) => parseDate(b.date) - parseDate(a.date)).slice(0, 30),
+      percentages: {
+        expense: calculatePercentages(expenseBreakdown, totals.expense),
+        income: calculatePercentages(incomeBreakdown, totals.income),
+      },
+      meta: {
+        month,
+        source: String(source).trim().toLowerCase(),
+        flow: String(flow).trim().toLowerCase(),
+      },
     };
   }
 
