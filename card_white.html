@@ -3,25 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>בנק</title>
+    <title>כרטיס לבן</title>
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body class="page-bank">
+  <body class="page-card-white">
     <div class="app-layout">
       <aside class="sidebar" aria-label="ניווט ראשי">
         <h1 class="sidebar-title">Finance 2026</h1>
         <nav class="sidebar-nav">
           <a class="nav-link" href="index.html">דשבורד</a>
-          <a class="nav-link active" href="bank.html" aria-current="page">בנק</a>
-          <a class="nav-link" href="card_white.html">כרטיס לבן</a>
+          <a class="nav-link" href="bank.html">בנק</a>
+          <a class="nav-link active" href="card_white.html" aria-current="page">כרטיס לבן</a>
           <a class="nav-link" href="credit.html">כרטיסי אשראי</a>
         </nav>
       </aside>
 
       <main class="main-content">
         <header class="page-header">
-          <h2>חשבון בנק</h2>
-          <p>ניהול חשבונות, יתרות ותנועות מרכזיות.</p>
+          <h2>כרטיס לבן</h2>
+          <p>סיכום חודשי, קטגוריות ותנועות לפי מקור כרטיס לבן.</p>
         </header>
 
         <section class="cards-grid" aria-label="סיכום חודשי">
@@ -52,8 +52,8 @@
           <div id="incomeCategories"></div>
         </section>
 
-        <section class="card table-card" aria-label="תנועות בנק חודשיות">
-          <h3>תנועות בנק</h3>
+        <section class="card table-card" aria-label="תנועות כרטיס לבן חודשיות">
+          <h3>תנועות כרטיס לבן</h3>
           <table>
             <thead>
               <tr>
@@ -64,13 +64,13 @@
                 <th>הכנסה</th>
               </tr>
             </thead>
-            <tbody id="bank-transactions-body"></tbody>
+            <tbody id="transactions-body"></tbody>
           </table>
         </section>
       </main>
     </div>
     <script src="data-loader.js"></script>
     <script src="core.js"></script>
-    <script src="bank-data.js"></script>
+    <script src="card-white-data.js"></script>
   </body>
 </html>
