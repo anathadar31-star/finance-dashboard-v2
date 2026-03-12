@@ -100,12 +100,12 @@
                   : '<tr><td colspan="2">אין פירוט חשבון.</td></tr>';
 
               return `
-                <tr class="category-row" data-category="${escapeHtml(key)}" role="button" tabindex="0" aria-expanded="false">
+                <tr class="category-row" role="button" tabindex="0" aria-expanded="false">
                   <td>${escapeHtml(getCategoryLabel(key))}</td>
                   <td>${formatCurrency(total)}</td>
                   <td>${percentage}%</td>
                 </tr>
-                <tr class="details-row" data-category-details="${escapeHtml(key)}" hidden>
+                <tr class="details-row" hidden>
                   <td colspan="3">
                     <table>
                       <thead>
@@ -125,11 +125,11 @@
     `;
 
     const toggle = function (categoryRow) {
-      const key = categoryRow.getAttribute("data-category");
-      const detailsRow = container.querySelector(`tr[data-category-details="${CSS.escape(key)}"]`);
-      if (!detailsRow) {
+      const detailsRow = categoryRow.nextElementSibling;
+      if (!detailsRow || !detailsRow.classList.contains("details-row")) {
         return;
       }
+
       const isExpanded = categoryRow.getAttribute("aria-expanded") === "true";
       categoryRow.setAttribute("aria-expanded", String(!isExpanded));
       detailsRow.hidden = isExpanded;
@@ -177,6 +177,12 @@
 
   function renderBankPage(model) {
     console.log("model", model);
+    console.log("model-structure", {
+      hasBreakdown: Boolean(model && model.breakdown),
+      hasDrilldown: Boolean(model && model.drilldown),
+      expenseDrilldownKeys: Object.keys(model?.drilldown?.expense || {}).length,
+      incomeDrilldownKeys: Object.keys(model?.drilldown?.income || {}).length,
+    });
     renderSummary(model);
     renderCategoryList(
       "expenseCategories",
