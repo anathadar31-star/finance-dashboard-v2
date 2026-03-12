@@ -57,7 +57,8 @@
   }
 
   function getCategoryLabel(key) {
-    return smartCategoryLabels[key] || key;
+    const normalizedKey = String(key || "").trim();
+    return smartCategoryLabels[normalizedKey] || normalizedKey;
   }
 
   function renderSummary(rows) {
@@ -99,7 +100,7 @@
           `<tr>
             <td>${row.date || ""}</td>
             <td>${row.description || ""}</td>
-            <td>${getCategoryLabel(row.smart_category || "")}</td>
+            <td>${getCategoryLabel(String(row.smart_category || "").trim())}</td>
             <td>${formatCurrency(toNumber(row.expense))}</td>
             <td>${formatCurrency(toNumber(row.income))}</td>
           </tr>`
@@ -107,14 +108,9 @@
       .join("");
   }
 
-  function sumBySmartCategory(rows, kind, valueField) {
+  function sumBySmartCategory(rows, valueField) {
     return rows.reduce((acc, row) => {
-      const category = String(row.category || "").trim().toLowerCase();
-      if (category !== kind) {
-        return acc;
-      }
-
-      const key = row.smart_category || "ללא קטגוריה";
+      const key = String(row.smart_category || "").trim() || "ללא קטגוריה";
       const amount = toNumber(row[valueField]);
       acc[key] = (acc[key] || 0) + amount;
       return acc;
@@ -182,6 +178,18 @@
     return `${year}-${String(monthNumber).padStart(2, "0")}`;
   }
 
+
+  function getNormalizedCategory(row) {
+    const category = String(row.category || "").trim().toLowerCase();
+    const smartCategory = String(row.smart_category || "").trim().toLowerCase();
+
+    if (smartCategory === "salary" && toNumber(row.income) > 0) {
+      return "income";
+    }
+
+    return category;
+  }
+
   function getLatestMonth(rows) {
     const months = rows.map((row) => normalizeMonth(row.billing_month)).filter(Boolean);
 
@@ -202,15 +210,11 @@
       ? bankRows.filter((row) => normalizeMonth(row.billing_month) === selectedMonth)
       : [];
 
-    const expenseRows = selectedRows.filter(
-      (row) => String(row.category || "").trim().toLowerCase() === "expense"
-    );
-    const incomeRows = selectedRows.filter(
-      (row) => String(row.category || "").trim().toLowerCase() === "income"
-    );
+    const expenseRows = selectedRows.filter((row) => getNormalizedCategory(row) === "expense");
+    const incomeRows = selectedRows.filter((row) => getNormalizedCategory(row) === "income");
 
-    const expenseTotalsRaw = sumBySmartCategory(expenseRows, "expense", "expense");
-    const incomeTotalsRaw = sumBySmartCategory(incomeRows, "income", "income");
+    const expenseTotalsRaw = sumBySmartCategory(expenseRows, "expense");
+    const incomeTotalsRaw = sumBySmartCategory(incomeRows, "income");
 
     const expenseTotals = Object.fromEntries(
       Object.entries(expenseTotalsRaw).filter(([, total]) => total > 0)
@@ -220,6 +224,7 @@
     );
 
     console.log("expenseTotals", expenseTotals, "salaryExists", Object.hasOwn(expenseTotals, "salary"));
+    console.log("incomeTotals", incomeTotals, "salaryExists", Object.hasOwn(incomeTotals, "salary"));
 
     const totalExpenses = getTotalFromMap(expenseTotals);
     const totalIncome = getTotalFromMap(incomeTotals);
