@@ -170,6 +170,10 @@
     );
   }
 
+  function getDrilldownDescription(row) {
+    return String(row.description || "").trim() || "ללא תיאור";
+  }
+
   function buildDrilldown(data, type) {
     const rows = (Array.isArray(data) ? data : []).filter(
       (row) => getNormalizedCategory(row) === type
@@ -178,7 +182,7 @@
 
     return rows.reduce((acc, row) => {
       const smartCategory = String(row.smart_category || "").trim() || "ללא קטגוריה";
-      const description = String(row.description || "").trim() || "ללא תיאור";
+      const description = getDrilldownDescription(row);
       const amount = toNumber(row[valueField]);
       if (amount <= 0) {
         return acc;
