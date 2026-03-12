@@ -30,6 +30,15 @@
     return Number.isFinite(numeric) ? numeric : 0;
   }
 
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   function getCategoryLabel(key) {
     const normalizedKey = String(key || "").trim();
     return smartCategoryLabels[normalizedKey] || normalizedKey;
@@ -51,7 +60,7 @@
     }
   }
 
-  function renderCategoryList(containerId, totals, percentages) {
+  function renderCategoryList(containerId, totals, percentages, drilldown) {
     const container = document.getElementById(containerId);
     if (!container) {
       return;
@@ -76,17 +85,67 @@
           ${entries
             .map(([key, total]) => {
               const percentage = Number(percentages?.[key] || 0).toFixed(1);
+              const details = Object.entries(drilldown?.[key] || {}).sort((a, b) => b[1] - a[1]);
+              const detailsRows =
+                details.length > 0
+                  ? details
+                      .map(
+                        ([accountName, amount]) => `
+                        <tr>
+                          <td>${escapeHtml(accountName)}</td>
+                          <td>${formatCurrency(amount)}</td>
+                        </tr>`
+                      )
+                      .join("")
+                  : '<tr><td colspan="2">אין פירוט חשבון.</td></tr>';
+
               return `
-            <tr>
-              <td>${getCategoryLabel(key)}</td>
-              <td>${formatCurrency(total)}</td>
-              <td>${percentage}%</td>
-            </tr>`;
+                <tr class="category-row" data-category="${escapeHtml(key)}" role="button" tabindex="0" aria-expanded="false">
+                  <td>${escapeHtml(getCategoryLabel(key))}</td>
+                  <td>${formatCurrency(total)}</td>
+                  <td>${percentage}%</td>
+                </tr>
+                <tr class="details-row" data-category-details="${escapeHtml(key)}" hidden>
+                  <td colspan="3">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>חשבון</th>
+                          <th>סכום</th>
+                        </tr>
+                      </thead>
+                      <tbody>${detailsRows}</tbody>
+                    </table>
+                  </td>
+                </tr>`;
             })
             .join("")}
         </tbody>
       </table>
     `;
+
+    const toggle = function (categoryRow) {
+      const key = categoryRow.getAttribute("data-category");
+      const detailsRow = container.querySelector(`tr[data-category-details="${CSS.escape(key)}"]`);
+      if (!detailsRow) {
+        return;
+      }
+      const isExpanded = categoryRow.getAttribute("aria-expanded") === "true";
+      categoryRow.setAttribute("aria-expanded", String(!isExpanded));
+      detailsRow.hidden = isExpanded;
+    };
+
+    container.querySelectorAll(".category-row").forEach((row) => {
+      row.addEventListener("click", function () {
+        toggle(row);
+      });
+      row.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          toggle(row);
+        }
+      });
+    });
   }
 
   function renderTransactions(rows) {
@@ -119,8 +178,18 @@
   function renderBankPage(model) {
     console.log("model", model);
     renderSummary(model);
-    renderCategoryList("expenseCategories", model.breakdown.expense, model.percentages.expense);
-    renderCategoryList("incomeCategories", model.breakdown.income, model.percentages.income);
+    renderCategoryList(
+      "expenseCategories",
+      model.breakdown.expense,
+      model.percentages.expense,
+      model.drilldown.expense
+    );
+    renderCategoryList(
+      "incomeCategories",
+      model.breakdown.income,
+      model.percentages.income,
+      model.drilldown.income
+    );
     renderTransactions(model.transactions);
   }
 
