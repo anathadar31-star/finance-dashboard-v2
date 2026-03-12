@@ -178,7 +178,7 @@
 
     return rows.reduce((acc, row) => {
       const smartCategory = String(row.smart_category || "").trim() || "ללא קטגוריה";
-      const accountName = String(row.account_name || "").trim() || "לא ידוע";
+      const description = String(row.description || "").trim() || "ללא תיאור";
       const amount = toNumber(row[valueField]);
       if (amount <= 0) {
         return acc;
@@ -187,7 +187,7 @@
       if (!acc[smartCategory]) {
         acc[smartCategory] = {};
       }
-      acc[smartCategory][accountName] = (acc[smartCategory][accountName] || 0) + amount;
+      acc[smartCategory][description] = (acc[smartCategory][description] || 0) + amount;
       return acc;
     }, {});
   }

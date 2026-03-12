@@ -183,6 +183,7 @@
       expenseDrilldownKeys: Object.keys(model?.drilldown?.expense || {}).length,
       incomeDrilldownKeys: Object.keys(model?.drilldown?.income || {}).length,
     });
+    console.log("model.drilldown", model?.drilldown || {});
     renderSummary(model);
     renderCategoryList(
       "expenseCategories",
