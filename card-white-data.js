@@ -115,7 +115,10 @@
 
   function init() {
     window.loadCSVData().then((data) => {
-      const model = window.buildMonthlyModel(data, { source: "card_white" });
+      const model = window.buildMonthlyModel(data, {
+        sourceFilter: "card_white",
+        source: "card_white",
+      });
       renderPage(model);
     });
   }
