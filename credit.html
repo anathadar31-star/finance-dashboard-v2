@@ -6,12 +6,52 @@
     <title>כרטיסי אשראי</title>
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body>
-    <main class="container">
-      <h1>כרטיסי אשראי</h1>
-      <p class="placeholder">בקרוב נתונים</p>
-      <a class="back-link" href="index.html">חזרה לדף הבית</a>
-    </main>
-    <script src="app.js"></script>
+  <body class="page-credit">
+    <div class="app-layout">
+      <aside class="sidebar" aria-label="ניווט ראשי">
+        <h1 class="sidebar-title">Finance 2026</h1>
+
+        <p>נתונים</p>
+        <nav class="sidebar-nav" aria-label="נתונים">
+          <a class="nav-link" href="bank.html">בנק</a>
+          <a class="nav-link active" href="credit.html" aria-current="page">כרטיסי אשראי</a>
+          <a class="nav-link" href="loans.html">הלוואות</a>
+          <a class="nav-link" href="subscriptions.html">מנויים</a>
+        </nav>
+
+        <p>סיכומים</p>
+        <nav class="sidebar-nav" aria-label="סיכומים">
+          <a class="nav-link" href="dashboard.html">דשבורד</a>
+          <a class="nav-link" href="monthly-summary.html">סיכום חודשי</a>
+          <a class="nav-link" href="category-summary.html">הוצאות לפי קטגוריה</a>
+        </nav>
+      </aside>
+
+      <main class="main-content">
+        <header class="page-header">
+          <h2>כרטיסי אשראי</h2>
+          <p>מעקב אחר מסגרות, שימושים וחיובים צפויים.</p>
+        </header>
+
+        <section class="cards-grid" aria-label="מדדי כרטיסים">
+          <article class="card metric-card">
+            <h3>מסגרת כוללת</h3>
+            <p class="metric">₪ 65,000</p>
+            <span class="trend up">זמין ₪ 41,300</span>
+          </article>
+          <article class="card metric-card">
+            <h3>שימוש נוכחי</h3>
+            <p class="metric">₪ 23,700</p>
+            <span class="trend neutral">36% ניצול</span>
+          </article>
+          <article class="card metric-card">
+            <h3>חיוב קרוב</h3>
+            <p class="metric">₪ 8,920</p>
+            <span class="trend pending">בעוד 6 ימים</span>
+          </article>
+        </section>
+      </main>
+    </div>
+    <script src="data-loader.js"></script>
   </body>
 </html>
