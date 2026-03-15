@@ -82,13 +82,9 @@
   }
 
   window.financeData = [];
-  window.financeDataPromise = Promise.resolve(window.financeData);
-
-  window.addEventListener("DOMContentLoaded", function () {
-    window.financeDataPromise = loadFinanceData().catch(function (error) {
-      console.error("Failed to load finance data:", error);
-      window.financeData = [];
-      return window.financeData;
-    });
+  window.financeDataPromise = loadFinanceData().catch(function (error) {
+    console.error("Failed to load finance data:", error);
+    window.financeData = [];
+    return window.financeData;
   });
 })();
