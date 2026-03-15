@@ -5,8 +5,95 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>בנק</title>
     <link rel="stylesheet" href="style.css" />
+    <style>
+      .bank-overview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+      }
+
+      .bank-metric-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin: 0;
+      }
+
+      .value-balance {
+        color: #2563eb;
+      }
+
+      .value-expense {
+        color: #dc2626;
+      }
+
+      .value-income {
+        color: #16a34a;
+      }
+
+      .bank-category-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .bank-category-item {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #f8fafc;
+        overflow: hidden;
+      }
+
+      .bank-category-toggle {
+        width: 100%;
+        border: 0;
+        background: transparent;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 14px;
+        font: inherit;
+        cursor: pointer;
+        color: #0f172a;
+      }
+
+      .bank-category-meta {
+        color: #475569;
+        font-size: 0.95rem;
+      }
+
+      .bank-category-details {
+        display: none;
+        border-top: 1px solid #e2e8f0;
+        background: #fff;
+        padding: 10px;
+      }
+
+      .bank-category-details.open {
+        display: block;
+      }
+
+      .latest-activity-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 16px;
+      }
+
+      .amount-expense {
+        color: #dc2626;
+        font-weight: 700;
+      }
+
+      .amount-income {
+        color: #16a34a;
+        font-weight: 700;
+      }
+
+      .bank-empty {
+        margin: 0;
+        color: #64748b;
+      }
+    </style>
   </head>
-  <body data-source-page="bank" class="page-bank">
+  <body class="page-bank">
     <div class="app-layout">
       <aside class="sidebar" aria-label="ניווט ראשי">
         <h1 class="sidebar-title">Finance 2026</h1>
@@ -30,56 +117,282 @@
       <main class="main-content">
         <header class="page-header">
           <h2>חשבון בנק</h2>
-          <p>ניהול חשבונות, יתרות ותנועות מרכזיות.</p>
+          <p>תמונת מצב פיננסית מהירה לפי נתוני הבנק בלבד.</p>
         </header>
 
-        <section class="cards-grid" aria-label="סיכום חודשי">
+        <section class="bank-overview-grid" aria-label="כרטיסי סקירה">
           <article class="card metric-card">
-            <h3>הכנסות חודשיות</h3>
-            <p class="metric" id="monthly-income">₪ 0</p>
-            <span class="trend up">סה״כ הכנסות</span>
+            <h3>יתרה כוללת</h3>
+            <p id="bank-total-balance" class="bank-metric-value value-balance">₪ 0</p>
           </article>
+
           <article class="card metric-card">
-            <h3>הוצאות חודשיות</h3>
-            <p class="metric" id="monthly-expenses">₪ 0</p>
-            <span class="trend pending">סה״כ הוצאות</span>
+            <h3>הוצאות החודש</h3>
+            <p id="bank-month-expenses" class="bank-metric-value value-expense">₪ 0</p>
           </article>
+
           <article class="card metric-card">
-            <h3>מאזן חודשי</h3>
-            <p class="metric" id="monthly-balance">₪ 0</p>
-            <span class="trend neutral">הכנסות פחות הוצאות</span>
+            <h3>הכנסות החודש</h3>
+            <p id="bank-month-income" class="bank-metric-value value-income">₪ 0</p>
           </article>
         </section>
 
-        <section class="card table-card" aria-label="פירוט הוצאות לפי קטגוריה">
-          <h3>פירוט הוצאות לפי קטגוריה</h3>
-          <div id="expenseCategories"></div>
+        <section class="card table-card" aria-label="התפלגות הוצאות">
+          <h3>לאן הכסף הולך – טופ 5 קטגוריות (חודש אחרון)</h3>
+          <div id="bank-spending-distribution" class="bank-category-list"></div>
         </section>
 
-        <section class="card table-card" aria-label="פירוט הכנסות לפי קטגוריה">
-          <h3>פירוט הכנסות לפי קטגוריה</h3>
-          <div id="incomeCategories"></div>
-        </section>
+        <section class="latest-activity-grid" aria-label="פעילות אחרונה">
+          <article class="card table-card">
+            <h3>הוצאות אחרונות (5)</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>תאריך</th>
+                  <th>תיאור</th>
+                  <th>סכום</th>
+                  <th>קטגוריה</th>
+                </tr>
+              </thead>
+              <tbody id="bank-latest-expenses-body"></tbody>
+            </table>
+          </article>
 
-        <section class="card table-card" aria-label="תנועות בנק חודשיות">
-          <h3>תנועות בנק</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>תאריך</th>
-                <th>תיאור</th>
-                <th>קטגוריה חכמה</th>
-                <th>הוצאה</th>
-                <th>הכנסה</th>
-              </tr>
-            </thead>
-            <tbody id="bank-transactions-body"></tbody>
-          </table>
+          <article class="card table-card">
+            <h3>הכנסות אחרונות (5)</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>תאריך</th>
+                  <th>תיאור</th>
+                  <th>סכום</th>
+                  <th>קטגוריה</th>
+                </tr>
+              </thead>
+              <tbody id="bank-latest-income-body"></tbody>
+            </table>
+          </article>
         </section>
       </main>
     </div>
+
     <script src="data-loader.js"></script>
     <script src="core.js"></script>
-    <script src="app.js"></script>
+    <script>
+      (function () {
+        function toNumber(value) {
+          const normalized = String(value || "0").replace(/[\s,₪]/g, "").trim();
+          const parsed = Number(normalized);
+          return Number.isFinite(parsed) ? parsed : 0;
+        }
+
+        function getAmount(row) {
+          const amountField = toNumber(row.amount);
+          if (amountField !== 0) return amountField;
+
+          const income = toNumber(row.income);
+          const expense = toNumber(row.expense);
+          if (income !== 0 || expense !== 0) return income - expense;
+          return 0;
+        }
+
+        function parseDate(value) {
+          if (!value) return new Date(0);
+
+          const nativeDate = new Date(value);
+          if (!Number.isNaN(nativeDate.getTime())) return nativeDate;
+
+          const parts = String(value).split(/[\/.-]/).map(Number);
+          if (parts.length === 3 && parts.every(Number.isFinite)) {
+            const [day, month, year] = parts;
+            const d = new Date(year, month - 1, day);
+            if (!Number.isNaN(d.getTime())) return d;
+          }
+
+          return new Date(0);
+        }
+
+        function formatCurrency(value) {
+          return new Intl.NumberFormat("he-IL", {
+            style: "currency",
+            currency: "ILS",
+            maximumFractionDigits: 2,
+          }).format(value);
+        }
+
+        function getCurrentMonth() {
+          return new Date().toISOString().slice(0, 7);
+        }
+
+        function renderOverview(balance, expensesMonth, incomeMonth) {
+          document.getElementById("bank-total-balance").textContent = formatCurrency(balance);
+          document.getElementById("bank-month-expenses").textContent = formatCurrency(expensesMonth);
+          document.getElementById("bank-month-income").textContent = formatCurrency(incomeMonth);
+        }
+
+        function renderLatestTable(containerId, rows, type) {
+          const tbody = document.getElementById(containerId);
+          if (!tbody) return;
+
+          if (rows.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4">אין נתונים לתצוגה.</td></tr>';
+            return;
+          }
+
+          tbody.innerHTML = rows
+            .map(function (row) {
+              const amount = getAmount(row);
+              const amountClass = type === "expense" ? "amount-expense" : "amount-income";
+              return '<tr>' +
+                '<td>' + (row.date || "") + '</td>' +
+                '<td>' + (row.description || "") + '</td>' +
+                '<td class="' + amountClass + '">' + formatCurrency(Math.abs(amount)) + '</td>' +
+                '<td>' + (row.category || "ללא קטגוריה") + '</td>' +
+              '</tr>';
+            })
+            .join("");
+        }
+
+        function buildCategorySection(rowsForLatestMonth) {
+          const expenseRows = rowsForLatestMonth.filter(function (row) {
+            return getAmount(row) < 0;
+          });
+
+          const groups = new Map();
+          expenseRows.forEach(function (row) {
+            const category = row.category || "ללא קטגוריה";
+            const expenseValue = Math.abs(getAmount(row));
+
+            if (!groups.has(category)) {
+              groups.set(category, { total: 0, rows: [] });
+            }
+
+            const bucket = groups.get(category);
+            bucket.total += expenseValue;
+            bucket.rows.push(row);
+          });
+
+          const totalMonthlyExpense = Array.from(groups.values()).reduce(function (sum, item) {
+            return sum + item.total;
+          }, 0);
+
+          return Array.from(groups.entries())
+            .map(function (entry) {
+              const category = entry[0];
+              const data = entry[1];
+              const percentage = totalMonthlyExpense > 0 ? (data.total / totalMonthlyExpense) * 100 : 0;
+              return { category: category, total: data.total, percentage: percentage, rows: data.rows };
+            })
+            .sort(function (a, b) {
+              return b.total - a.total;
+            })
+            .slice(0, 5);
+        }
+
+        function renderDistribution(rowsForLatestMonth) {
+          const container = document.getElementById("bank-spending-distribution");
+          if (!container) return;
+
+          const categories = buildCategorySection(rowsForLatestMonth);
+          if (categories.length === 0) {
+            container.innerHTML = '<p class="bank-empty">אין נתוני הוצאות לחודש האחרון.</p>';
+            return;
+          }
+
+          container.innerHTML = categories
+            .map(function (item, index) {
+              const detailRows = item.rows
+                .slice()
+                .sort(function (a, b) { return parseDate(b.date) - parseDate(a.date); })
+                .map(function (row) {
+                  return '<tr>' +
+                    '<td>' + (row.date || "") + '</td>' +
+                    '<td>' + (row.description || "") + '</td>' +
+                    '<td class="amount-expense">' + formatCurrency(Math.abs(getAmount(row))) + '</td>' +
+                  '</tr>';
+                })
+                .join("");
+
+              return '<div class="bank-category-item">' +
+                '<button class="bank-category-toggle" type="button" data-target="cat-' + index + '">' +
+                  '<span>' + item.category + '</span>' +
+                  '<span class="bank-category-meta">' + formatCurrency(item.total) + ' – ' + item.percentage.toFixed(1) + '%</span>' +
+                '</button>' +
+                '<div id="cat-' + index + '" class="bank-category-details">' +
+                  '<table>' +
+                    '<thead><tr><th>תאריך</th><th>תיאור</th><th>סכום</th></tr></thead>' +
+                    '<tbody>' + detailRows + '</tbody>' +
+                  '</table>' +
+                '</div>' +
+              '</div>';
+            })
+            .join("");
+
+          container.querySelectorAll(".bank-category-toggle").forEach(function (button) {
+            button.addEventListener("click", function () {
+              const targetId = button.getAttribute("data-target");
+              const panel = document.getElementById(targetId);
+              if (panel) panel.classList.toggle("open");
+            });
+          });
+        }
+
+        function renderPage(transactions) {
+          const currentMonth = getCurrentMonth();
+          const monthlyRows = transactions.filter(function (row) {
+            return String(row.billing_month || "") === currentMonth;
+          });
+
+          const balance = transactions.reduce(function (sum, row) {
+            return sum + getAmount(row);
+          }, 0);
+
+          const expensesMonth = monthlyRows.reduce(function (sum, row) {
+            const amount = getAmount(row);
+            return amount < 0 ? sum + Math.abs(amount) : sum;
+          }, 0);
+
+          const incomeMonth = monthlyRows.reduce(function (sum, row) {
+            const amount = getAmount(row);
+            return amount > 0 ? sum + amount : sum;
+          }, 0);
+
+          renderOverview(balance, expensesMonth, incomeMonth);
+
+          const latestBillingMonth = transactions
+            .map(function (row) { return String(row.billing_month || ""); })
+            .filter(Boolean)
+            .sort()
+            .pop() || "";
+
+          const rowsForLatestMonth = transactions.filter(function (row) {
+            return String(row.billing_month || "") === latestBillingMonth;
+          });
+
+          renderDistribution(rowsForLatestMonth);
+
+          const latestExpenses = transactions
+            .filter(function (row) { return getAmount(row) < 0; })
+            .sort(function (a, b) { return parseDate(b.date) - parseDate(a.date); })
+            .slice(0, 5);
+
+          const latestIncome = transactions
+            .filter(function (row) { return getAmount(row) > 0; })
+            .sort(function (a, b) { return parseDate(b.date) - parseDate(a.date); })
+            .slice(0, 5);
+
+          renderLatestTable("bank-latest-expenses-body", latestExpenses, "expense");
+          renderLatestTable("bank-latest-income-body", latestIncome, "income");
+        }
+
+        window.financeDataPromise.then(function (data) {
+          const transactions = (Array.isArray(data) ? data : []).filter(function (t) {
+            return String(t.source || "").trim().toLowerCase() === "bank";
+          });
+
+          renderPage(transactions);
+        });
+      })();
+    </script>
   </body>
 </html>
