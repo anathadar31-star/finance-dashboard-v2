@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>כרטיס לבן</title>
+    <title>כאל לבן</title>
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body class="page-card-white">
+  <body class="page-card-white" data-card-source="card_white">
     <div class="app-layout">
       <aside class="sidebar" aria-label="ניווט ראשי">
         <h1 class="sidebar-title">Finance 2026</h1>
@@ -14,7 +14,10 @@
         <p>נתונים</p>
         <nav class="sidebar-nav" aria-label="נתונים">
           <a class="nav-link" href="bank.html">בנק</a>
-          <a class="nav-link" href="credit.html">כרטיסי אשראי</a>
+          <a class="nav-link" href="credit.html">כל הכרטיסים</a>
+          <a class="nav-link active" href="card_white.html" aria-current="page">כאל לבן</a>
+          <a class="nav-link" href="card_black.html">כאל שחור</a>
+          <a class="nav-link" href="card_max.html">מקס</a>
           <a class="nav-link" href="loans.html">הלוואות</a>
           <a class="nav-link" href="subscriptions.html">מנויים</a>
         </nav>
@@ -29,57 +32,29 @@
 
       <main class="main-content">
         <header class="page-header">
-          <h2>כרטיס לבן</h2>
-          <p>סיכום חודשי, קטגוריות ותנועות לפי מקור כרטיס לבן.</p>
+          <h2>כאל לבן</h2>
+          <p>תנועות כרטיס ממקור card_white.</p>
         </header>
 
-        <section class="cards-grid" aria-label="סיכום חודשי">
-          <article class="card metric-card">
-            <h3>הכנסות חודשיות</h3>
-            <p class="metric" id="monthly-income">₪ 0</p>
-            <span class="trend up">סה״כ הכנסות</span>
-          </article>
-          <article class="card metric-card">
-            <h3>הוצאות חודשיות</h3>
-            <p class="metric" id="monthly-expenses">₪ 0</p>
-            <span class="trend pending">סה״כ הוצאות</span>
-          </article>
-          <article class="card metric-card">
-            <h3>מאזן חודשי</h3>
-            <p class="metric" id="monthly-balance">₪ 0</p>
-            <span class="trend neutral">הכנסות פחות הוצאות</span>
-          </article>
-        </section>
-
-        <section class="card table-card" aria-label="פירוט הוצאות לפי קטגוריה">
-          <h3>פירוט הוצאות לפי קטגוריה</h3>
-          <div id="expenseCategories"></div>
-        </section>
-
-        <section class="card table-card" aria-label="פירוט הכנסות לפי קטגוריה">
-          <h3>פירוט הכנסות לפי קטגוריה</h3>
-          <div id="incomeCategories"></div>
-        </section>
-
-        <section class="card table-card" aria-label="תנועות כרטיס לבן חודשיות">
-          <h3>תנועות כרטיס לבן</h3>
+        <section class="card table-card" aria-label="תנועות כאל לבן">
+          <h3>תנועות</h3>
           <table>
             <thead>
               <tr>
                 <th>תאריך</th>
                 <th>תיאור</th>
-                <th>קטגוריה חכמה</th>
-                <th>הוצאה</th>
-                <th>הכנסה</th>
+                <th>סכום</th>
+                <th>קטגוריה</th>
+                <th>תת קטגוריה</th>
               </tr>
             </thead>
-            <tbody id="transactions-body"></tbody>
+            <tbody id="card-transactions-body"></tbody>
           </table>
         </section>
       </main>
     </div>
     <script src="data-loader.js"></script>
     <script src="core.js"></script>
-    <script src="card-white-data.js"></script>
+    <script src="credit-cards-data.js"></script>
   </body>
 </html>
