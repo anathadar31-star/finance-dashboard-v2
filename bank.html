@@ -299,6 +299,10 @@
           return map[key] || (typeValue || "-");
         }
 
+        function getSubcategoryLabel(row) {
+          return row.subcategory || "ללא תת קטגוריה";
+        }
+
         function formatMonthLabel(monthValue) {
           if (!monthValue) return "-";
           const parts = monthValue.split("-");
@@ -435,7 +439,7 @@
               item.rows.forEach(function (row) {
                 const typeKey = String(row.type || "").trim().toLowerCase() || "unknown";
                 const translatedType = translateType(typeKey === "unknown" ? "-" : typeKey);
-                const subcategory = row.subcategory || "ללא תת קטגוריה";
+                const subcategory = getSubcategoryLabel(row);
 
                 if (!byTypeThenSubcategory.has(translatedType)) {
                   byTypeThenSubcategory.set(translatedType, new Map());
