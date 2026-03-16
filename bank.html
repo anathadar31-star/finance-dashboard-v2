@@ -429,28 +429,42 @@
 
           container.innerHTML = groupedData.groups
             .map(function (item, idx) {
-              const subMap = new Map();
+              const byTypeThenSubcategory = new Map();
               item.rows.forEach(function (row) {
+                const typeKey = String(row.type || "").trim().toLowerCase() || "unknown";
+                const translatedType = translateType(typeKey === "unknown" ? "-" : typeKey);
                 const subcategory = row.subcategory || row.smart_category || "ללא תת קטגוריה";
+
+                if (!byTypeThenSubcategory.has(translatedType)) {
+                  byTypeThenSubcategory.set(translatedType, new Map());
+                }
+
+                const subMap = byTypeThenSubcategory.get(translatedType);
                 if (!subMap.has(subcategory)) {
-                  subMap.set(subcategory, { total: 0, types: [] });
+                  subMap.set(subcategory, 0);
                 }
-                const bucket = subMap.get(subcategory);
-                bucket.total += Math.abs(getAmount(row));
-                if (row.type) {
-                  bucket.types.push(translateType(row.type));
-                }
+                subMap.set(subcategory, subMap.get(subcategory) + Math.abs(getAmount(row)));
               });
 
-              const subRows = Array.from(subMap.entries())
-                .sort(function (a, b) { return b[1].total - a[1].total; })
-                .map(function (entry) {
-                  const types = entry[1].types.length ? Array.from(new Set(entry[1].types)).join(', ') : '-';
-                  return '<tr>' +
-                    '<td>' + entry[0] + '</td>' +
-                    '<td>' + types + '</td>' +
-                    '<td class="amount-expense">' + formatCurrency(entry[1].total) + '</td>' +
-                  '</tr>';
+              const subRows = Array.from(byTypeThenSubcategory.entries())
+                .sort(function (a, b) {
+                  const totalA = Array.from(a[1].values()).reduce(function (sum, v) { return sum + v; }, 0);
+                  const totalB = Array.from(b[1].values()).reduce(function (sum, v) { return sum + v; }, 0);
+                  return totalB - totalA;
+                })
+                .map(function (typeEntry) {
+                  const typeLabel = typeEntry[0];
+                  const subMap = typeEntry[1];
+                  return Array.from(subMap.entries())
+                    .sort(function (a, b) { return b[1] - a[1]; })
+                    .map(function (subEntry) {
+                      return '<tr>' +
+                        '<td>' + typeLabel + '</td>' +
+                        '<td>' + subEntry[0] + '</td>' +
+                        '<td class="amount-expense">' + formatCurrency(subEntry[1]) + '</td>' +
+                      '</tr>';
+                    })
+                    .join('');
                 })
                 .join("");
 
@@ -516,8 +530,7 @@
           }
 
           const slices = groupedData.groups.map(function (item) {
-            const pieLabel = item.category === "אחר" ? "Other" : item.category;
-            return { name: pieLabel, value: item.total };
+            return { name: item.category, value: item.total };
           });
 
           const total = slices.reduce(function (sum, item) { return sum + item.value; }, 0);
