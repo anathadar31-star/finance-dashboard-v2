@@ -288,6 +288,17 @@
           }).format(value);
         }
 
+        function translateType(typeValue) {
+          const map = {
+            expense: "הוצאה",
+            income: "הכנסה",
+            transfer: "העברה",
+            saving: "חיסכון",
+          };
+          const key = String(typeValue || "").trim().toLowerCase();
+          return map[key] || (typeValue || "-");
+        }
+
         function formatMonthLabel(monthValue) {
           if (!monthValue) return "-";
           const parts = monthValue.split("-");
@@ -359,18 +370,10 @@
             .join("");
         }
 
-        function renderSpendingDistribution(monthRows) {
-          const container = document.getElementById("bank-spending-distribution");
-          if (!container) return;
-
+        function buildExpenseCategoryGroups(monthRows) {
           const expenseRows = monthRows.filter(function (row) {
             return getAmount(row) < 0;
           });
-
-          if (expenseRows.length === 0) {
-            container.innerHTML = '<p class="bank-empty">אין הוצאות בחודש זה.</p>';
-            return;
-          }
 
           const categoryMap = new Map();
           expenseRows.forEach(function (row) {
@@ -388,54 +391,81 @@
             return sum + Math.abs(getAmount(row));
           }, 0);
 
-          const topCategories = Array.from(categoryMap.entries())
+          const sorted = Array.from(categoryMap.entries())
             .map(function (entry) {
               const category = entry[0];
               const data = entry[1];
               return {
                 category: category,
                 total: data.total,
-                percentage: totalExpenses > 0 ? (data.total / totalExpenses) * 100 : 0,
                 rows: data.rows,
               };
             })
             .sort(function (a, b) {
               return b.total - a.total;
-            })
-            .slice(0, 5);
+            });
 
-          container.innerHTML = topCategories
+          const top = sorted.slice(0, 5);
+          const otherRows = sorted.slice(5).flatMap(function (item) { return item.rows; });
+          const otherTotal = sorted.slice(5).reduce(function (sum, item) { return sum + item.total; }, 0);
+          const grouped = otherTotal > 0 ? top.concat([{ category: "אחר", total: otherTotal, rows: otherRows }]) : top;
+
+          return {
+            totalExpenses: totalExpenses,
+            groups: grouped,
+            hasExpenses: expenseRows.length > 0,
+          };
+        }
+
+        function renderSpendingDistribution(monthRows) {
+          const container = document.getElementById("bank-spending-distribution");
+          if (!container) return;
+
+          const groupedData = buildExpenseCategoryGroups(monthRows);
+          if (!groupedData.hasExpenses) {
+            container.innerHTML = '<p class="bank-empty">אין הוצאות בחודש זה.</p>';
+            return;
+          }
+
+          container.innerHTML = groupedData.groups
             .map(function (item, idx) {
               const subMap = new Map();
               item.rows.forEach(function (row) {
                 const subcategory = row.subcategory || row.smart_category || "ללא תת קטגוריה";
                 if (!subMap.has(subcategory)) {
-                  subMap.set(subcategory, 0);
+                  subMap.set(subcategory, { total: 0, types: [] });
                 }
-                subMap.set(subcategory, subMap.get(subcategory) + Math.abs(getAmount(row)));
+                const bucket = subMap.get(subcategory);
+                bucket.total += Math.abs(getAmount(row));
+                if (row.type) {
+                  bucket.types.push(translateType(row.type));
+                }
               });
 
               const subRows = Array.from(subMap.entries())
-                .sort(function (a, b) { return b[1] - a[1]; })
+                .sort(function (a, b) { return b[1].total - a[1].total; })
                 .map(function (entry) {
+                  const types = entry[1].types.length ? Array.from(new Set(entry[1].types)).join(', ') : '-';
                   return '<tr>' +
                     '<td>' + entry[0] + '</td>' +
-                    '<td class="amount-expense">' + formatCurrency(entry[1]) + '</td>' +
+                    '<td>' + types + '</td>' +
+                    '<td class="amount-expense">' + formatCurrency(entry[1].total) + '</td>' +
                   '</tr>';
                 })
                 .join("");
 
+              const percentage = groupedData.totalExpenses > 0 ? (item.total / groupedData.totalExpenses) * 100 : 0;
               return (
                 '<div class="bank-category-item">' +
                   '<button class="bank-category-toggle" type="button" data-target="cat-' + idx + '">' +
                     '<span>' + item.category + '</span>' +
                     '<span class="bank-item-meta amount-expense">' +
-                      formatCurrency(item.total) + ' - ' + item.percentage.toFixed(1) + '%'+
+                      formatCurrency(item.total) + ' - ' + percentage.toFixed(1) + '%'+
                     '</span>' +
                   '</button>' +
                   '<div id="cat-' + idx + '" class="bank-category-details">' +
                     '<table>' +
-                      '<thead><tr><th>תת קטגוריה</th><th>סכום</th></tr></thead>' +
+                      '<thead><tr><th>תת קטגוריה</th><th>סוג</th><th>סכום</th></tr></thead>' +
                       '<tbody>' + subRows + '</tbody>' +
                     '</table>' +
                   '</div>' +
@@ -451,6 +481,7 @@
             });
           });
         }
+
 
 
         function polarToCartesian(cx, cy, radius, angleInRadians) {
@@ -477,36 +508,16 @@
           const legend = document.getElementById("bank-expense-pie-legend");
           if (!svg || !legend) return;
 
-          const expenseRows = monthRows.filter(function (row) {
-            return getAmount(row) < 0;
-          });
-
-          if (expenseRows.length === 0) {
+          const groupedData = buildExpenseCategoryGroups(monthRows);
+          if (!groupedData.hasExpenses) {
             svg.innerHTML = '<text x="110" y="112" text-anchor="middle" fill="#64748b" font-size="14">אין נתונים</text>';
             legend.innerHTML = '<p class="bank-empty">אין הוצאות בחודש זה.</p>';
             return;
           }
 
-          const byCategory = new Map();
-          expenseRows.forEach(function (row) {
-            const category = row.category || "ללא קטגוריה";
-            if (!byCategory.has(category)) {
-              byCategory.set(category, 0);
-            }
-            byCategory.set(category, byCategory.get(category) + Math.abs(getAmount(row)));
+          const slices = groupedData.groups.map(function (item) {
+            return { name: item.category, value: item.total };
           });
-
-          const sorted = Array.from(byCategory.entries())
-            .map(function (entry) {
-              return { name: entry[0], value: entry[1] };
-            })
-            .sort(function (a, b) {
-              return b.value - a.value;
-            });
-
-          const top = sorted.slice(0, 5);
-          const otherValue = sorted.slice(5).reduce(function (sum, item) { return sum + item.value; }, 0);
-          const slices = otherValue > 0 ? top.concat([{ name: "Other", value: otherValue }]) : top;
 
           const total = slices.reduce(function (sum, item) { return sum + item.value; }, 0);
           const colors = ["#2563eb", "#16a34a", "#f59e0b", "#dc2626", "#8b5cf6", "#64748b"];
@@ -537,6 +548,7 @@
             })
             .join("");
         }
+
 
         function updateMonthNavigation() {
           const label = document.getElementById("bank-selected-month-label");
