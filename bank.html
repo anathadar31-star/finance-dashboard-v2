@@ -6,6 +6,36 @@
     <title>בנק</title>
     <link rel="stylesheet" href="style.css" />
     <style>
+      .bank-month-nav {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin: 8px 0 20px;
+      }
+
+      .bank-month-nav button {
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #0f172a;
+        border-radius: 8px;
+        width: 36px;
+        height: 36px;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+
+      .bank-month-nav button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .bank-month-label {
+        font-weight: 600;
+        min-width: 140px;
+        text-align: center;
+      }
+
       .bank-overview-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -138,9 +168,14 @@
 
       <main class="main-content">
         <header class="page-header">
-          <h2>סקירה חודשית - בנק</h2>
-          <p id="bank-latest-month-label">חישוב לפי החודש האחרון הקיים בנתונים.</p>
+          <h2>בנק</h2>
         </header>
+
+        <nav class="bank-month-nav" aria-label="ניווט חודשים">
+          <button id="bank-month-prev" type="button" aria-label="חודש קודם">◀</button>
+          <span id="bank-selected-month-label" class="bank-month-label">-</span>
+          <button id="bank-month-next" type="button" aria-label="חודש הבא">▶</button>
+        </nav>
 
         <section class="bank-overview-grid" aria-label="כרטיסי סקירה חודשיים">
           <article class="card metric-card">
@@ -161,7 +196,7 @@
 
         <div class="bank-insights-grid" aria-label="פירוט הכנסות והוצאות">
           <article class="card table-card" aria-label="פירוט הכנסות">
-            <h3>מקורות הכנסה - חודש אחרון</h3>
+            <h3>מקורות הכנסה - חודש נבחר</h3>
             <div id="bank-income-breakdown" class="bank-income-list"></div>
           </article>
 
@@ -177,6 +212,10 @@
     <script src="core.js"></script>
     <script>
       (function () {
+        let allTransactions = [];
+        let availableMonths = [];
+        let selectedMonth = "";
+
         function toNumber(value) {
           const normalized = String(value || "0").replace(/[\s,₪]/g, "").trim();
           const parsed = Number(normalized);
@@ -201,30 +240,15 @@
           }).format(value);
         }
 
-        function parseDate(value) {
-          if (!value) return new Date(0);
-
-          const nativeDate = new Date(value);
-          if (!Number.isNaN(nativeDate.getTime())) return nativeDate;
-
-          const parts = String(value).split(/[\/.-]/).map(Number);
-          if (parts.length === 3 && parts.every(Number.isFinite)) {
-            const [day, month, year] = parts;
-            const d = new Date(year, month - 1, day);
-            if (!Number.isNaN(d.getTime())) return d;
-          }
-
-          return new Date(0);
-        }
-
-        function getLatestBillingMonth(rows) {
-          return rows
-            .map(function (row) {
-              return String(row.billing_month || "").trim();
-            })
-            .filter(Boolean)
-            .sort()
-            .pop() || "";
+        function formatMonthLabel(monthValue) {
+          if (!monthValue) return "-";
+          const parts = monthValue.split("-");
+          if (parts.length !== 2) return monthValue;
+          const year = Number(parts[0]);
+          const month = Number(parts[1]);
+          if (!Number.isFinite(year) || !Number.isFinite(month)) return monthValue;
+          const d = new Date(year, month - 1, 1);
+          return new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(d);
         }
 
         function renderOverview(incomeTotal, expenseTotal) {
@@ -380,18 +404,24 @@
           });
         }
 
-        window.financeDataPromise.then(function (data) {
-          const bankRows = (Array.isArray(data) ? data : []).filter(function (row) {
-            return String(row.source || "").trim().toLowerCase() === "bank";
-          });
+        function updateMonthNavigation() {
+          const label = document.getElementById("bank-selected-month-label");
+          const prev = document.getElementById("bank-month-prev");
+          const next = document.getElementById("bank-month-next");
 
-          const latestMonth = getLatestBillingMonth(bankRows);
-          document.getElementById("bank-latest-month-label").textContent = latestMonth
-            ? 'חישוב לפי חודש ' + latestMonth
-            : 'לא נמצא חודש חיוב בנתונים.';
+          const index = availableMonths.indexOf(selectedMonth);
+          label.textContent = formatMonthLabel(selectedMonth);
 
-          const monthRows = bankRows.filter(function (row) {
-            return String(row.billing_month || "").trim() === latestMonth;
+          prev.disabled = index <= 0;
+          next.disabled = index === -1 || index >= availableMonths.length - 1;
+        }
+
+        function renderBankPage(month) {
+          selectedMonth = month;
+          updateMonthNavigation();
+
+          const monthRows = allTransactions.filter(function (t) {
+            return String(t.source || "").trim().toLowerCase() === "bank" && String(t.billing_month || "") === selectedMonth;
           });
 
           const monthIncome = monthRows.reduce(function (sum, row) {
@@ -407,6 +437,50 @@
           renderOverview(monthIncome, monthExpenses);
           renderSpendingDistribution(monthRows);
           renderIncomeBreakdown(monthRows);
+        }
+
+        function moveMonth(step) {
+          const index = availableMonths.indexOf(selectedMonth);
+          if (index === -1) return;
+          const nextIndex = index + step;
+          if (nextIndex < 0 || nextIndex >= availableMonths.length) return;
+          renderBankPage(availableMonths[nextIndex]);
+        }
+
+        window.financeDataPromise.then(function (data) {
+          allTransactions = Array.isArray(data) ? data : [];
+
+          availableMonths = Array.from(
+            new Set(
+              allTransactions
+                .map(function (row) {
+                  return String(row.billing_month || "").trim();
+                })
+                .filter(Boolean)
+            )
+          ).sort();
+
+          if (availableMonths.length === 0) {
+            document.getElementById("bank-selected-month-label").textContent = "אין חודשים להצגה";
+            document.getElementById("bank-month-prev").disabled = true;
+            document.getElementById("bank-month-next").disabled = true;
+            renderOverview(0, 0);
+            renderSpendingDistribution([]);
+            renderIncomeBreakdown([]);
+            return;
+          }
+
+          selectedMonth = availableMonths[availableMonths.length - 1];
+
+          document.getElementById("bank-month-prev").addEventListener("click", function () {
+            moveMonth(-1);
+          });
+
+          document.getElementById("bank-month-next").addEventListener("click", function () {
+            moveMonth(1);
+          });
+
+          renderBankPage(selectedMonth);
         });
       })();
     </script>
