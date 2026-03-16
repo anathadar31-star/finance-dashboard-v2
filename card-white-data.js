@@ -97,7 +97,7 @@
           `<tr>
             <td>${row.date || ""}</td>
             <td>${row.description || ""}</td>
-            <td>${getCategoryLabel(row.smart_category || "")}</td>
+            <td>${getCategoryLabel(row.category || "")}</td>
             <td>${formatCurrency(toNumber(row.expense))}</td>
             <td>${formatCurrency(toNumber(row.income))}</td>
           </tr>`

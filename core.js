@@ -48,13 +48,12 @@
   }
 
   function getNormalizedCategory(row) {
-    const category = String(row.category || "").trim().toLowerCase();
-    const smartCategory = String(row.smart_category || "").trim().toLowerCase();
-
-    if (smartCategory === "salary" && toNumber(row.income) > 0) {
-      return "income";
+    const typeValue = String(row.type || "").trim().toLowerCase();
+    if (["income", "expense", "transfer", "saving"].includes(typeValue)) {
+      return typeValue;
     }
 
+    const category = String(row.category || "").trim().toLowerCase();
     return category;
   }
 
@@ -152,7 +151,7 @@
 
     const valueField = type === "income" ? "income" : "expense";
     const totalsRaw = rows.reduce((acc, row) => {
-      const key = String(row.smart_category || "").trim() || "ללא קטגוריה";
+      const key = String(row.category || "").trim() || "ללא קטגוריה";
       const amount = toNumber(row[valueField]);
       acc[key] = (acc[key] || 0) + amount;
       return acc;
@@ -181,17 +180,17 @@
     const valueField = type === "income" ? "income" : "expense";
 
     return rows.reduce((acc, row) => {
-      const smartCategory = String(row.smart_category || "").trim() || "ללא קטגוריה";
+      const category = String(row.category || "").trim() || "ללא קטגוריה";
       const description = getDrilldownDescription(row);
       const amount = toNumber(row[valueField]);
       if (amount <= 0) {
         return acc;
       }
 
-      if (!acc[smartCategory]) {
-        acc[smartCategory] = {};
+      if (!acc[category]) {
+        acc[category] = {};
       }
-      acc[smartCategory][description] = (acc[smartCategory][description] || 0) + amount;
+      acc[category][description] = (acc[category][description] || 0) + amount;
       return acc;
     }, {});
   }

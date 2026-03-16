@@ -53,7 +53,7 @@
   }
 
   function getSubcategory(row) {
-    return row.subcategory || row.smart_category || "";
+    return row.subcategory || "";
   }
 
   function renderBankRows(tbody, rows, emptyColspan) {
@@ -67,7 +67,7 @@
         (row) => `<tr>
           <td>${row.date || ""}</td>
           <td>${row.description || ""}</td>
-          <td>${row.smart_category || row.category || ""}</td>
+          <td>${row.category || ""}</td>
           <td>${formatCurrency(toNumber(row.expense))}</td>
           <td>${formatCurrency(toNumber(row.income))}</td>
         </tr>`

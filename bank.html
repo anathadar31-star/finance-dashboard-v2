@@ -299,6 +299,10 @@
           return map[key] || (typeValue || "-");
         }
 
+        function getSubcategoryLabel(row) {
+          return row.subcategory || "ללא תת קטגוריה";
+        }
+
         function formatMonthLabel(monthValue) {
           if (!monthValue) return "-";
           const parts = monthValue.split("-");
@@ -371,8 +375,10 @@
         }
 
         function buildExpenseCategoryGroups(monthRows) {
-          const expenseRows = monthRows.filter(function (row) {
-            return getAmount(row) < 0;
+          const expenseRows = (Array.isArray(monthRows) ? monthRows : []).filter(function (row) {
+            return String(row.source || "").trim().toLowerCase() === "bank" &&
+              String(row.billing_month || "").trim() === selectedMonth &&
+              getAmount(row) < 0;
           });
 
           const categoryMap = new Map();
@@ -433,7 +439,7 @@
               item.rows.forEach(function (row) {
                 const typeKey = String(row.type || "").trim().toLowerCase() || "unknown";
                 const translatedType = translateType(typeKey === "unknown" ? "-" : typeKey);
-                const subcategory = row.subcategory || row.smart_category || "ללא תת קטגוריה";
+                const subcategory = getSubcategoryLabel(row);
 
                 if (!byTypeThenSubcategory.has(translatedType)) {
                   byTypeThenSubcategory.set(translatedType, new Map());

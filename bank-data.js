@@ -167,7 +167,7 @@
           `<tr>
             <td>${row.date || ""}</td>
             <td>${row.description || ""}</td>
-            <td>${getCategoryLabel(String(row.smart_category || "").trim())}</td>
+            <td>${getCategoryLabel(String(row.category || "").trim())}</td>
             <td>${formatCurrency(toNumber(row.expense))}</td>
             <td>${formatCurrency(toNumber(row.income))}</td>
           </tr>`

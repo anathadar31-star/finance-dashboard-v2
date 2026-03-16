@@ -49,7 +49,7 @@
   }
 
   function getSubcategory(row) {
-    return row.subcategory || row.smart_category || "";
+    return row.subcategory || "";
   }
 
   function getSourceFilter() {
