@@ -435,42 +435,22 @@
 
           container.innerHTML = groupedData.groups
             .map(function (item, idx) {
-              const byTypeThenSubcategory = new Map();
+              const subMap = new Map();
               item.rows.forEach(function (row) {
-                const typeKey = String(row.type || "").trim().toLowerCase() || "unknown";
-                const translatedType = translateType(typeKey === "unknown" ? "-" : typeKey);
                 const subcategory = getSubcategoryLabel(row);
-
-                if (!byTypeThenSubcategory.has(translatedType)) {
-                  byTypeThenSubcategory.set(translatedType, new Map());
-                }
-
-                const subMap = byTypeThenSubcategory.get(translatedType);
                 if (!subMap.has(subcategory)) {
                   subMap.set(subcategory, 0);
                 }
                 subMap.set(subcategory, subMap.get(subcategory) + Math.abs(getAmount(row)));
               });
 
-              const subRows = Array.from(byTypeThenSubcategory.entries())
-                .sort(function (a, b) {
-                  const totalA = Array.from(a[1].values()).reduce(function (sum, v) { return sum + v; }, 0);
-                  const totalB = Array.from(b[1].values()).reduce(function (sum, v) { return sum + v; }, 0);
-                  return totalB - totalA;
-                })
-                .map(function (typeEntry) {
-                  const typeLabel = typeEntry[0];
-                  const subMap = typeEntry[1];
-                  return Array.from(subMap.entries())
-                    .sort(function (a, b) { return b[1] - a[1]; })
-                    .map(function (subEntry) {
-                      return '<tr>' +
-                        '<td>' + typeLabel + '</td>' +
-                        '<td>' + subEntry[0] + '</td>' +
-                        '<td class="amount-expense">' + formatCurrency(subEntry[1]) + '</td>' +
-                      '</tr>';
-                    })
-                    .join('');
+              const subRows = Array.from(subMap.entries())
+                .sort(function (a, b) { return b[1] - a[1]; })
+                .map(function (subEntry) {
+                  return '<tr>' +
+                    '<td>' + subEntry[0] + '</td>' +
+                    '<td class="amount-expense">' + formatCurrency(subEntry[1]) + '</td>' +
+                  '</tr>';
                 })
                 .join("");
 
@@ -485,7 +465,7 @@
                   '</button>' +
                   '<div id="cat-' + idx + '" class="bank-category-details">' +
                     '<table>' +
-                      '<thead><tr><th>תת קטגוריה</th><th>סוג</th><th>סכום</th></tr></thead>' +
+                      '<thead><tr><th>תת קטגוריה</th><th>סכום</th></tr></thead>' +
                       '<tbody>' + subRows + '</tbody>' +
                     '</table>' +
                   '</div>' +
@@ -493,7 +473,6 @@
               );
             })
             .join("");
-
           container.querySelectorAll(".bank-category-toggle").forEach(function (btn) {
             btn.addEventListener("click", function () {
               const panel = document.getElementById(btn.getAttribute("data-target"));
