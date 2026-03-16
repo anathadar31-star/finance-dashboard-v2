@@ -516,7 +516,8 @@
           }
 
           const slices = groupedData.groups.map(function (item) {
-            return { name: item.category, value: item.total };
+            const pieLabel = item.category === "אחר" ? "Other" : item.category;
+            return { name: pieLabel, value: item.total };
           });
 
           const total = slices.reduce(function (sum, item) { return sum + item.value; }, 0);
