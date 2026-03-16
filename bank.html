@@ -3,15 +3,621 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>חשבון בנק</title>
+    <title>בנק</title>
     <link rel="stylesheet" href="style.css" />
+    <style>
+      .bank-month-nav {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin: 8px 0 20px;
+      }
+
+      .bank-month-nav button {
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #0f172a;
+        border-radius: 8px;
+        width: 36px;
+        height: 36px;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+
+      .bank-month-nav button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .bank-month-label {
+        font-weight: 600;
+        min-width: 140px;
+        text-align: center;
+      }
+
+      .bank-overview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+      }
+
+      .bank-metric-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin: 0;
+      }
+
+      .value-balance {
+        color: #2563eb;
+      }
+
+      .value-expense {
+        color: #dc2626;
+      }
+
+      .value-income {
+        color: #16a34a;
+      }
+
+      .bank-insights-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        direction: ltr;
+      }
+
+      .bank-insights-grid > article,
+      .bank-insights-grid > section {
+        direction: rtl;
+      }
+
+      .bank-category-list,
+      .bank-income-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .bank-category-item,
+      .bank-income-item {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #f8fafc;
+        overflow: hidden;
+      }
+
+      .bank-category-toggle {
+        width: 100%;
+        border: 0;
+        background: transparent;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 14px;
+        font: inherit;
+        cursor: pointer;
+        color: #0f172a;
+      }
+
+      .bank-income-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 14px;
+      }
+
+      .bank-item-meta {
+        color: #475569;
+        font-size: 0.95rem;
+      }
+
+      .bank-category-details {
+        display: none;
+        border-top: 1px solid #e2e8f0;
+        background: #fff;
+        padding: 10px;
+      }
+
+      .bank-category-details.open {
+        display: block;
+      }
+
+      .amount-expense {
+        color: #dc2626;
+        font-weight: 700;
+      }
+
+      .amount-income {
+        color: #16a34a;
+        font-weight: 700;
+      }
+
+      .bank-empty {
+        margin: 0;
+        color: #64748b;
+      }
+
+
+      .bank-pie-card {
+        margin-top: 16px;
+      }
+
+      .bank-pie-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .bank-pie-svg {
+        width: 220px;
+        height: 220px;
+      }
+
+      .bank-pie-legend {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(160px, 1fr));
+        gap: 8px 12px;
+        width: 100%;
+        max-width: 460px;
+      }
+
+      .bank-pie-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.92rem;
+      }
+
+      .bank-pie-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        flex: 0 0 10px;
+      }
+
+      @media (max-width: 1024px) {
+        .bank-insights-grid {
+          grid-template-columns: 1fr;
+          direction: rtl;
+        }
+      }
+    </style>
   </head>
-  <body>
-    <main class="container">
-      <h1>חשבון בנק</h1>
-      <p class="placeholder">בקרוב נתונים</p>
-      <a class="back-link" href="index.html">חזרה לדף הבית</a>
-    </main>
-    <script src="app.js"></script>
+  <body class="page-bank">
+    <div class="app-layout">
+      <aside class="sidebar" aria-label="ניווט ראשי">
+        <h1 class="sidebar-title">Finance 2026</h1>
+
+        <p>נתונים</p>
+        <nav class="sidebar-nav" aria-label="נתונים">
+          <a class="nav-link active" href="bank.html" aria-current="page">בנק</a>
+          <a class="nav-link" href="credit.html">כרטיסי אשראי</a>
+          <a class="nav-link" href="loans.html">הלוואות</a>
+          <a class="nav-link" href="subscriptions.html">מנויים</a>
+        </nav>
+
+        <p>סיכומים</p>
+        <nav class="sidebar-nav" aria-label="סיכומים">
+          <a class="nav-link" href="dashboard.html">דשבורד</a>
+          <a class="nav-link" href="monthly-summary.html">סיכום חודשי</a>
+          <a class="nav-link" href="category-summary.html">הוצאות לפי קטגוריה</a>
+        </nav>
+      </aside>
+
+      <main class="main-content">
+        <header class="page-header">
+          <h2>בנק</h2>
+        </header>
+
+        <nav class="bank-month-nav" aria-label="ניווט חודשים">
+          <button id="bank-month-prev" type="button" aria-label="חודש קודם">◀</button>
+          <span id="bank-selected-month-label" class="bank-month-label">-</span>
+          <button id="bank-month-next" type="button" aria-label="חודש הבא">▶</button>
+        </nav>
+
+        <section class="bank-overview-grid" aria-label="כרטיסי סקירה חודשיים">
+          <article class="card metric-card">
+            <h3>מאזן חודשי</h3>
+            <p id="bank-month-balance" class="bank-metric-value value-balance">₪ 0</p>
+          </article>
+
+          <article class="card metric-card">
+            <h3>הוצאות חודשיות</h3>
+            <p id="bank-month-expenses" class="bank-metric-value value-expense">₪ 0</p>
+          </article>
+
+          <article class="card metric-card">
+            <h3>הכנסות חודשיות</h3>
+            <p id="bank-month-income" class="bank-metric-value value-income">₪ 0</p>
+          </article>
+        </section>
+
+
+        <section class="card table-card bank-pie-card" aria-label="פיזור הוצאות חודשי">
+          <h3>פיזור הוצאות חודשי לפי קטגוריות</h3>
+          <div class="bank-pie-wrap">
+            <svg id="bank-expense-pie" class="bank-pie-svg" viewBox="0 0 220 220" role="img" aria-label="תרשים עוגה של פיזור הוצאות"></svg>
+            <div id="bank-expense-pie-legend" class="bank-pie-legend"></div>
+          </div>
+        </section>
+
+        <div class="bank-insights-grid" aria-label="פירוט הכנסות והוצאות">
+          <article class="card table-card" aria-label="פירוט הכנסות">
+            <h3>מקורות הכנסה - חודש נבחר</h3>
+            <div id="bank-income-breakdown" class="bank-income-list"></div>
+          </article>
+
+          <section class="card table-card" aria-label="התפלגות הוצאות">
+            <h3>לאן הכסף הולך - טופ 5 קטגוריות</h3>
+            <div id="bank-spending-distribution" class="bank-category-list"></div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <script src="data-loader.js"></script>
+    <script src="core.js"></script>
+    <script>
+      (function () {
+        let allTransactions = [];
+        let availableMonths = [];
+        let selectedMonth = "";
+
+        function toNumber(value) {
+          const normalized = String(value || "0").replace(/[\s,₪]/g, "").trim();
+          const parsed = Number(normalized);
+          return Number.isFinite(parsed) ? parsed : 0;
+        }
+
+        function getAmount(row) {
+          const amountField = toNumber(row.amount);
+          if (amountField !== 0) return amountField;
+
+          const income = toNumber(row.income);
+          const expense = toNumber(row.expense);
+          if (income !== 0 || expense !== 0) return income - expense;
+          return 0;
+        }
+
+        function formatCurrency(value) {
+          return new Intl.NumberFormat("he-IL", {
+            style: "currency",
+            currency: "ILS",
+            maximumFractionDigits: 2,
+          }).format(value);
+        }
+
+        function formatMonthLabel(monthValue) {
+          if (!monthValue) return "-";
+          const parts = monthValue.split("-");
+          if (parts.length !== 2) return monthValue;
+          const year = Number(parts[0]);
+          const month = Number(parts[1]);
+          if (!Number.isFinite(year) || !Number.isFinite(month)) return monthValue;
+          const d = new Date(year, month - 1, 1);
+          return new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(d);
+        }
+
+        function renderOverview(incomeTotal, expenseTotal) {
+          const balance = incomeTotal - expenseTotal;
+          document.getElementById("bank-month-balance").textContent = formatCurrency(balance);
+          document.getElementById("bank-month-expenses").textContent = formatCurrency(expenseTotal);
+          document.getElementById("bank-month-income").textContent = formatCurrency(incomeTotal);
+        }
+
+        function renderIncomeBreakdown(monthRows) {
+          const container = document.getElementById("bank-income-breakdown");
+          if (!container) return;
+
+          const incomeRows = monthRows.filter(function (row) {
+            return getAmount(row) > 0;
+          });
+
+          const totalIncome = incomeRows.reduce(function (sum, row) {
+            return sum + getAmount(row);
+          }, 0);
+
+          if (incomeRows.length === 0 || totalIncome === 0) {
+            container.innerHTML = '<p class="bank-empty">אין הכנסות בחודש זה.</p>';
+            return;
+          }
+
+          const grouped = new Map();
+          incomeRows.forEach(function (row) {
+            const description = row.description || "ללא תיאור";
+            if (!grouped.has(description)) {
+              grouped.set(description, 0);
+            }
+            grouped.set(description, grouped.get(description) + getAmount(row));
+          });
+
+          const list = Array.from(grouped.entries())
+            .map(function (entry) {
+              const amount = entry[1];
+              return {
+                description: entry[0],
+                amount: amount,
+                percentage: (amount / totalIncome) * 100,
+              };
+            })
+            .sort(function (a, b) {
+              return b.amount - a.amount;
+            });
+
+          container.innerHTML = list
+            .map(function (item) {
+              return (
+                '<div class="bank-income-item">' +
+                  '<span>' + item.description + '</span>' +
+                  '<span class="bank-item-meta amount-income">' +
+                    formatCurrency(item.amount) + ' - ' + item.percentage.toFixed(1) + '%'+
+                  '</span>' +
+                '</div>'
+              );
+            })
+            .join("");
+        }
+
+        function renderSpendingDistribution(monthRows) {
+          const container = document.getElementById("bank-spending-distribution");
+          if (!container) return;
+
+          const expenseRows = monthRows.filter(function (row) {
+            return getAmount(row) < 0;
+          });
+
+          if (expenseRows.length === 0) {
+            container.innerHTML = '<p class="bank-empty">אין הוצאות בחודש זה.</p>';
+            return;
+          }
+
+          const categoryMap = new Map();
+          expenseRows.forEach(function (row) {
+            const category = row.category || "ללא קטגוריה";
+            if (!categoryMap.has(category)) {
+              categoryMap.set(category, { total: 0, rows: [] });
+            }
+            const bucket = categoryMap.get(category);
+            const amount = Math.abs(getAmount(row));
+            bucket.total += amount;
+            bucket.rows.push(row);
+          });
+
+          const totalExpenses = expenseRows.reduce(function (sum, row) {
+            return sum + Math.abs(getAmount(row));
+          }, 0);
+
+          const topCategories = Array.from(categoryMap.entries())
+            .map(function (entry) {
+              const category = entry[0];
+              const data = entry[1];
+              return {
+                category: category,
+                total: data.total,
+                percentage: totalExpenses > 0 ? (data.total / totalExpenses) * 100 : 0,
+                rows: data.rows,
+              };
+            })
+            .sort(function (a, b) {
+              return b.total - a.total;
+            })
+            .slice(0, 5);
+
+          container.innerHTML = topCategories
+            .map(function (item, idx) {
+              const subMap = new Map();
+              item.rows.forEach(function (row) {
+                const subcategory = row.subcategory || row.smart_category || "ללא תת קטגוריה";
+                if (!subMap.has(subcategory)) {
+                  subMap.set(subcategory, 0);
+                }
+                subMap.set(subcategory, subMap.get(subcategory) + Math.abs(getAmount(row)));
+              });
+
+              const subRows = Array.from(subMap.entries())
+                .sort(function (a, b) { return b[1] - a[1]; })
+                .map(function (entry) {
+                  return '<tr>' +
+                    '<td>' + entry[0] + '</td>' +
+                    '<td class="amount-expense">' + formatCurrency(entry[1]) + '</td>' +
+                  '</tr>';
+                })
+                .join("");
+
+              return (
+                '<div class="bank-category-item">' +
+                  '<button class="bank-category-toggle" type="button" data-target="cat-' + idx + '">' +
+                    '<span>' + item.category + '</span>' +
+                    '<span class="bank-item-meta amount-expense">' +
+                      formatCurrency(item.total) + ' - ' + item.percentage.toFixed(1) + '%'+
+                    '</span>' +
+                  '</button>' +
+                  '<div id="cat-' + idx + '" class="bank-category-details">' +
+                    '<table>' +
+                      '<thead><tr><th>תת קטגוריה</th><th>סכום</th></tr></thead>' +
+                      '<tbody>' + subRows + '</tbody>' +
+                    '</table>' +
+                  '</div>' +
+                '</div>'
+              );
+            })
+            .join("");
+
+          container.querySelectorAll(".bank-category-toggle").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+              const panel = document.getElementById(btn.getAttribute("data-target"));
+              if (panel) panel.classList.toggle("open");
+            });
+          });
+        }
+
+
+        function polarToCartesian(cx, cy, radius, angleInRadians) {
+          return {
+            x: cx + radius * Math.cos(angleInRadians),
+            y: cy + radius * Math.sin(angleInRadians),
+          };
+        }
+
+        function describeSlicePath(cx, cy, radius, startAngle, endAngle) {
+          const start = polarToCartesian(cx, cy, radius, startAngle);
+          const end = polarToCartesian(cx, cy, radius, endAngle);
+          const largeArcFlag = endAngle - startAngle > Math.PI ? 1 : 0;
+          return [
+            "M", cx, cy,
+            "L", start.x, start.y,
+            "A", radius, radius, 0, largeArcFlag, 1, end.x, end.y,
+            "Z",
+          ].join(" ");
+        }
+
+        function renderExpensePieChart(monthRows) {
+          const svg = document.getElementById("bank-expense-pie");
+          const legend = document.getElementById("bank-expense-pie-legend");
+          if (!svg || !legend) return;
+
+          const expenseRows = monthRows.filter(function (row) {
+            return getAmount(row) < 0;
+          });
+
+          if (expenseRows.length === 0) {
+            svg.innerHTML = '<text x="110" y="112" text-anchor="middle" fill="#64748b" font-size="14">אין נתונים</text>';
+            legend.innerHTML = '<p class="bank-empty">אין הוצאות בחודש זה.</p>';
+            return;
+          }
+
+          const byCategory = new Map();
+          expenseRows.forEach(function (row) {
+            const category = row.category || "ללא קטגוריה";
+            if (!byCategory.has(category)) {
+              byCategory.set(category, 0);
+            }
+            byCategory.set(category, byCategory.get(category) + Math.abs(getAmount(row)));
+          });
+
+          const sorted = Array.from(byCategory.entries())
+            .map(function (entry) {
+              return { name: entry[0], value: entry[1] };
+            })
+            .sort(function (a, b) {
+              return b.value - a.value;
+            });
+
+          const top = sorted.slice(0, 5);
+          const otherValue = sorted.slice(5).reduce(function (sum, item) { return sum + item.value; }, 0);
+          const slices = otherValue > 0 ? top.concat([{ name: "Other", value: otherValue }]) : top;
+
+          const total = slices.reduce(function (sum, item) { return sum + item.value; }, 0);
+          const colors = ["#2563eb", "#16a34a", "#f59e0b", "#dc2626", "#8b5cf6", "#64748b"];
+
+          let cursor = -Math.PI / 2;
+          const cx = 110;
+          const cy = 110;
+          const radius = 88;
+
+          svg.innerHTML = slices
+            .map(function (slice, idx) {
+              const ratio = total > 0 ? slice.value / total : 0;
+              const next = cursor + ratio * Math.PI * 2;
+              const path = describeSlicePath(cx, cy, radius, cursor, next);
+              const color = colors[idx % colors.length];
+              cursor = next;
+              return '<path d="' + path + '" fill="' + color + '"></path>';
+            })
+            .join("") + '<circle cx="110" cy="110" r="44" fill="#fff"></circle>';
+
+          legend.innerHTML = slices
+            .map(function (slice, idx) {
+              const pct = total > 0 ? (slice.value / total) * 100 : 0;
+              return '<div class="bank-pie-legend-item">' +
+                '<span class="bank-pie-dot" style="background:' + colors[idx % colors.length] + '"></span>' +
+                '<span>' + slice.name + ' - ' + formatCurrency(slice.value) + ' (' + pct.toFixed(1) + '%)</span>' +
+              '</div>';
+            })
+            .join("");
+        }
+
+        function updateMonthNavigation() {
+          const label = document.getElementById("bank-selected-month-label");
+          const prev = document.getElementById("bank-month-prev");
+          const next = document.getElementById("bank-month-next");
+
+          const index = availableMonths.indexOf(selectedMonth);
+          label.textContent = formatMonthLabel(selectedMonth);
+
+          prev.disabled = index <= 0;
+          next.disabled = index === -1 || index >= availableMonths.length - 1;
+        }
+
+        function renderBankPage(month) {
+          selectedMonth = month;
+          updateMonthNavigation();
+
+          const monthRows = allTransactions.filter(function (t) {
+            return String(t.source || "").trim().toLowerCase() === "bank" && String(t.billing_month || "") === selectedMonth;
+          });
+
+          const monthIncome = monthRows.reduce(function (sum, row) {
+            const amount = getAmount(row);
+            return amount > 0 ? sum + amount : sum;
+          }, 0);
+
+          const monthExpenses = monthRows.reduce(function (sum, row) {
+            const amount = getAmount(row);
+            return amount < 0 ? sum + Math.abs(amount) : sum;
+          }, 0);
+
+          renderOverview(monthIncome, monthExpenses);
+          renderExpensePieChart(monthRows);
+          renderSpendingDistribution(monthRows);
+          renderIncomeBreakdown(monthRows);
+        }
+
+        function moveMonth(step) {
+          const index = availableMonths.indexOf(selectedMonth);
+          if (index === -1) return;
+          const nextIndex = index + step;
+          if (nextIndex < 0 || nextIndex >= availableMonths.length) return;
+          renderBankPage(availableMonths[nextIndex]);
+        }
+
+        window.financeDataPromise.then(function (data) {
+          allTransactions = Array.isArray(data) ? data : [];
+
+          availableMonths = Array.from(
+            new Set(
+              allTransactions
+                .map(function (row) {
+                  return String(row.billing_month || "").trim();
+                })
+                .filter(Boolean)
+            )
+          ).sort();
+
+          if (availableMonths.length === 0) {
+            document.getElementById("bank-selected-month-label").textContent = "אין חודשים להצגה";
+            document.getElementById("bank-month-prev").disabled = true;
+            document.getElementById("bank-month-next").disabled = true;
+            renderOverview(0, 0);
+            renderSpendingDistribution([]);
+            renderIncomeBreakdown([]);
+            return;
+          }
+
+          selectedMonth = availableMonths[availableMonths.length - 1];
+
+          document.getElementById("bank-month-prev").addEventListener("click", function () {
+            moveMonth(-1);
+          });
+
+          document.getElementById("bank-month-next").addEventListener("click", function () {
+            moveMonth(1);
+          });
+
+          renderBankPage(selectedMonth);
+        });
+      })();
+    </script>
   </body>
 </html>
