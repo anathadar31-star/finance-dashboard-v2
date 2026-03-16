@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>finance-dashboard-v2</title>
+    <title>מקס</title>
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body class="page-home">
+  <body data-source-page="card_max" class="page-card-max" data-card-source="card_max">
     <div class="app-layout">
       <aside class="sidebar" aria-label="ניווט ראשי">
         <h1 class="sidebar-title">Finance 2026</h1>
@@ -14,7 +14,10 @@
         <p>נתונים</p>
         <nav class="sidebar-nav" aria-label="נתונים">
           <a class="nav-link" href="bank.html">בנק</a>
-          <a class="nav-link" href="credit.html">כרטיסי אשראי</a>
+          <a class="nav-link" href="credit.html">כל הכרטיסים</a>
+          <a class="nav-link" href="card_white.html">כאל לבן</a>
+          <a class="nav-link" href="card_black.html">כאל שחור</a>
+          <a class="nav-link active" href="card_max.html" aria-current="page">מקס</a>
           <a class="nav-link" href="loans.html">הלוואות</a>
           <a class="nav-link" href="subscriptions.html">מנויים</a>
         </nav>
@@ -29,11 +32,29 @@
 
       <main class="main-content">
         <header class="page-header">
-          <h2>ברוכים הבאים</h2>
-          <p>בחרו מקור נתונים או מסך סיכום מהתפריט.</p>
+          <h2>מקס</h2>
+          <p>תנועות כרטיס ממקור card_max.</p>
         </header>
+
+        <section class="card table-card" aria-label="תנועות מקס">
+          <h3>תנועות</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>תאריך</th>
+                <th>תיאור</th>
+                <th>סכום</th>
+                <th>קטגוריה</th>
+                <th>תת קטגוריה</th>
+              </tr>
+            </thead>
+            <tbody id="card-transactions-body"></tbody>
+          </table>
+        </section>
       </main>
     </div>
     <script src="data-loader.js"></script>
+    <script src="core.js"></script>
+    <script src="app.js"></script>
   </body>
 </html>
