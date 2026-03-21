@@ -1,31 +1,21 @@
 (function () {
   function toNumber(value) {
-    if (value === null || value === undefined) {
-      return 0;
-    }
-
+    if (value === null || value === undefined) return 0;
     const normalized = String(value).replace(/[,\s₪]/g, "").trim();
     const numeric = Number(normalized);
     return Number.isFinite(numeric) ? numeric : 0;
   }
 
   function parseDate(value) {
-    if (!value) {
-      return new Date(0);
-    }
+    if (!value) return new Date(0);
 
     const iso = new Date(value);
-    if (!Number.isNaN(iso.getTime())) {
-      return iso;
-    }
+    if (!Number.isNaN(iso.getTime())) return iso;
 
     const parts = String(value).split(/[\/.-]/);
     if (parts.length === 3) {
-      const [day, month, year] = parts.map((part) => Number(part));
-      const d = new Date(year, month - 1, day);
-      if (!Number.isNaN(d.getTime())) {
-        return d;
-      }
+      const [day, month, year] = parts.map(Number);
+      return new Date(year, month - 1, day);
     }
 
     return new Date(0);
@@ -34,37 +24,32 @@
   function normalizeMonth(value) {
     const raw = String(value || "").trim();
     const match = raw.match(/^(\d{4})-(\d{1,2})$/);
-    if (!match) {
-      return null;
-    }
+    if (!match) return null;
 
     const year = match[1];
     const monthNumber = Number(match[2]);
-    if (!Number.isInteger(monthNumber) || monthNumber < 1 || monthNumber > 12) {
-      return null;
-    }
+    if (monthNumber < 1 || monthNumber > 12) return null;
 
     return `${year}-${String(monthNumber).padStart(2, "0")}`;
   }
 
+  // ✅ FIX קריטי
   function getNormalizedCategory(row) {
-    const typeValue = String(row.type || "").trim().toLowerCase();
-    if (["income", "expense", "transfer", "saving"].includes(typeValue)) {
-      return typeValue;
-    }
+    return String(row.category || "").trim() || "ללא קטגוריה";
+  }
 
-    const category = String(row.category || "").trim().toLowerCase();
-    return category;
+  function getFlowType(row) {
+    return String(row.type || "").trim().toLowerCase();
   }
 
   function waitForFinanceData() {
     return new Promise((resolve) => {
-      const wait = function () {
+      const wait = () => {
         if (Array.isArray(window.financeData) && window.financeData.length > 0) {
           resolve(window.financeData);
-          return;
+        } else {
+          setTimeout(wait, 100);
         }
-        setTimeout(wait, 100);
       };
       wait();
     });
@@ -76,10 +61,9 @@
     }
 
     if (window.financeDataPromise) {
-      return window.financeDataPromise.then((rows) => {
-        const resolvedRows = Array.isArray(rows) ? rows : [];
-        return resolvedRows.length > 0 ? resolvedRows : waitForFinanceData();
-      });
+      return window.financeDataPromise.then((rows) =>
+        rows.length ? rows : waitForFinanceData()
+      );
     }
 
     return waitForFinanceData();
@@ -87,40 +71,32 @@
 
   function filterByMonth(data, month) {
     const targetMonth = normalizeMonth(month);
-    if (!targetMonth) {
-      return [];
-    }
+    if (!targetMonth) return [];
 
-    return (Array.isArray(data) ? data : []).filter(
+    return data.filter(
       (row) => normalizeMonth(row.billing_month) === targetMonth
     );
   }
 
   function filterBySource(data, source) {
-    const selectedSource = String(source || "all").trim().toLowerCase();
-    if (selectedSource === "all") {
-      return Array.isArray(data) ? [...data] : [];
-    }
+    const s = String(source || "all").toLowerCase();
+    if (s === "all") return [...data];
 
-    return (Array.isArray(data) ? data : []).filter(
-      (row) => String(row.source || "").trim().toLowerCase() === selectedSource
+    return data.filter(
+      (row) => String(row.source || "").toLowerCase() === s
     );
   }
 
   function filterByFlowType(data, flow) {
-    const selectedFlow = String(flow || "all").trim().toLowerCase();
-    if (selectedFlow === "all") {
-      return Array.isArray(data) ? [...data] : [];
-    }
+    const f = String(flow || "all").toLowerCase();
+    if (f === "all") return [...data];
 
-    return (Array.isArray(data) ? data : []).filter(
-      (row) => getNormalizedCategory(row) === selectedFlow
-    );
+    return data.filter((row) => getFlowType(row) === f);
   }
 
   function getLatestMonth(data) {
-    const months = (Array.isArray(data) ? data : [])
-      .map((row) => normalizeMonth(row.billing_month))
+    const months = data
+      .map((r) => normalizeMonth(r.billing_month))
       .filter(Boolean)
       .sort();
 
@@ -128,94 +104,85 @@
   }
 
   function calculateKPIs(data) {
-    const totalIncome = (Array.isArray(data) ? data : []).reduce(
-      (sum, row) => sum + toNumber(row.income),
-      0
-    );
-    const totalExpenses = (Array.isArray(data) ? data : []).reduce(
-      (sum, row) => sum + toNumber(row.expense),
-      0
-    );
+    const income = data.reduce((s, r) => s + toNumber(r.income), 0);
+    const expense = data.reduce((s, r) => s + toNumber(r.expense), 0);
 
     return {
-      income: totalIncome,
-      expense: totalExpenses,
-      net: totalIncome - totalExpenses,
+      income,
+      expense,
+      net: income - expense,
     };
   }
 
+  // ✅ FIX קריטי – מבוסס category בלבד
   function calculateCategoryBreakdown(data, type) {
-    const rows = (Array.isArray(data) ? data : []).filter(
-      (row) => getNormalizedCategory(row) === type
+    const valueField = type === "income" ? "income" : "expense";
+
+    const rows = data.filter(
+      (row) => getFlowType(row) === type
     );
 
-    const valueField = type === "income" ? "income" : "expense";
-    const totalsRaw = rows.reduce((acc, row) => {
-      const key = String(row.category || "").trim() || "ללא קטגוריה";
-      const amount = toNumber(row[valueField]);
-      acc[key] = (acc[key] || 0) + amount;
-      return acc;
-    }, {});
+    const result = {};
 
-    return Object.fromEntries(Object.entries(totalsRaw).filter(([, total]) => total > 0));
+    rows.forEach((row) => {
+      const category = getNormalizedCategory(row);
+      const amount = toNumber(row[valueField]);
+
+      if (amount <= 0) return;
+
+      result[category] = (result[category] || 0) + amount;
+    });
+
+    return result;
   }
 
   function calculatePercentages(breakdown, total) {
     return Object.fromEntries(
-      Object.entries(breakdown || {}).map(([key, amount]) => {
-        const percentage = total > 0 ? Number(((amount / total) * 100).toFixed(1)) : 0;
-        return [key, percentage];
-      })
+      Object.entries(breakdown).map(([k, v]) => [
+        k,
+        total > 0 ? Number(((v / total) * 100).toFixed(1)) : 0,
+      ])
     );
-  }
-
-  function getDrilldownDescription(row) {
-    return String(row.description || "").trim() || "ללא תיאור";
   }
 
   function buildDrilldown(data, type) {
-    const rows = (Array.isArray(data) ? data : []).filter(
-      (row) => getNormalizedCategory(row) === type
-    );
     const valueField = type === "income" ? "income" : "expense";
 
-    return rows.reduce((acc, row) => {
-      const category = String(row.category || "").trim() || "ללא קטגוריה";
-      const description = getDrilldownDescription(row);
-      const amount = toNumber(row[valueField]);
-      if (amount <= 0) {
-        return acc;
-      }
+    const rows = data.filter(
+      (row) => getFlowType(row) === type
+    );
 
-      if (!acc[category]) {
-        acc[category] = {};
-      }
-      acc[category][description] = (acc[category][description] || 0) + amount;
-      return acc;
-    }, {});
+    const result = {};
+
+    rows.forEach((row) => {
+      const category = getNormalizedCategory(row);
+      const sub = String(row.subcategory || row.description || "ללא פירוט");
+      const amount = toNumber(row[valueField]);
+
+      if (amount <= 0) return;
+
+      if (!result[category]) result[category] = {};
+      result[category][sub] = (result[category][sub] || 0) + amount;
+    });
+
+    return result;
   }
 
-  function normalizeOptions(optionsOrMonth) {
-    if (typeof optionsOrMonth === "string") {
-      return { month: optionsOrMonth };
-    }
-
-    return optionsOrMonth && typeof optionsOrMonth === "object" ? optionsOrMonth : {};
+  function normalizeOptions(opt) {
+    return typeof opt === "string" ? { month: opt } : opt || {};
   }
 
   function buildMonthlyModel(data, optionsOrMonth) {
     const options = normalizeOptions(optionsOrMonth);
-    const source = options.source || "all";
-    const flow = options.flow || options.type || "all";
 
-    const sourceFiltered = filterBySource(data, source);
+    const sourceFiltered = filterBySource(data, options.source);
     const month = normalizeMonth(options.month) || getLatestMonth(sourceFiltered);
-    const monthFiltered = month ? filterByMonth(sourceFiltered, month) : [];
-    const filteredRows = filterByFlowType(monthFiltered, flow);
+    const monthFiltered = filterByMonth(sourceFiltered, month);
+    const filtered = filterByFlowType(monthFiltered, options.flow);
 
-    const totals = calculateKPIs(filteredRows);
-    const expenseBreakdown = calculateCategoryBreakdown(filteredRows, "expense");
-    const incomeBreakdown = calculateCategoryBreakdown(filteredRows, "income");
+    const totals = calculateKPIs(filtered);
+    const expenseBreakdown = calculateCategoryBreakdown(filtered, "expense");
+    const incomeBreakdown = calculateCategoryBreakdown(filtered, "income");
 
     return {
       totals,
@@ -224,26 +191,23 @@
         income: incomeBreakdown,
       },
       drilldown: {
-        expense: buildDrilldown(filteredRows, "expense"),
-        income: buildDrilldown(filteredRows, "income"),
+        expense: buildDrilldown(filtered, "expense"),
+        income: buildDrilldown(filtered, "income"),
       },
-      transactions: [...filteredRows].sort((a, b) => parseDate(b.date) - parseDate(a.date)).slice(0, 30),
+      transactions: filtered
+        .sort((a, b) => parseDate(b.date) - parseDate(a.date))
+        .slice(0, 30),
       percentages: {
         expense: calculatePercentages(expenseBreakdown, totals.expense),
         income: calculatePercentages(incomeBreakdown, totals.income),
       },
       meta: {
         month,
-        source: String(source).trim().toLowerCase(),
-        flow: String(flow).trim().toLowerCase(),
+        source: options.source || "all",
+        flow: options.flow || "all",
       },
     };
   }
 
-  window.loadCSVData = loadCSVData;
-  window.filterByMonth = filterByMonth;
-  window.calculateKPIs = calculateKPIs;
-  window.calculateCategoryBreakdown = calculateCategoryBreakdown;
-  window.calculatePercentages = calculatePercentages;
   window.buildMonthlyModel = buildMonthlyModel;
 })();
