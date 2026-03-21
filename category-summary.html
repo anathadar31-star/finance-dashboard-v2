@@ -1,30 +1,73 @@
 <!doctype html>
 <html lang="he" dir="rtl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>הוצאות לפי קטגוריה</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <div class="app-layout">
-      <aside class="sidebar" aria-label="ניווט ראשי">
-        <h1 class="sidebar-title">Finance 2026</h1>
-        <p>נתונים</p>
-        <nav class="sidebar-nav" aria-label="נתונים">
-          <a class="nav-link" href="bank.html">בנק</a>
-          <a class="nav-link" href="credit.html">כרטיסי אשראי</a>
-          <a class="nav-link" href="loans.html">הלוואות</a>
-          <a class="nav-link" href="subscriptions.html">מנויים</a>
-        </nav>
-        <p>סיכומים</p>
-        <nav class="sidebar-nav" aria-label="סיכומים">
-          <a class="nav-link" href="dashboard.html">דשבורד</a>
-          <a class="nav-link" href="monthly-summary.html">סיכום חודשי</a>
-          <a class="nav-link active" href="category-summary.html" aria-current="page">הוצאות לפי קטגוריה</a>
-        </nav>
-      </aside>
-      <main class="main-content"><header class="page-header"><h2>הוצאות לפי קטגוריה</h2><p>עמוד זה יתווסף בהמשך.</p></header></main>
-    </div>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>הוצאות לפי קטגוריה</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+<div class="app-layout">
+
+  <aside class="sidebar">
+    <h1 class="sidebar-title">Finance 2026</h1>
+
+    <p>נתונים</p>
+    <nav class="sidebar-nav">
+      <a href="bank.html">בנק</a>
+      <a href="credit.html">כרטיסי אשראי</a>
+      <a href="loans.html">הלוואות</a>
+      <a href="subscriptions.html">מנויים</a>
+    </nav>
+
+    <p>סיכומים</p>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html">דשבורד</a>
+      <a href="monthly-summary.html">סיכום חודשי</a>
+      <a class="active" href="category-summary.html">הוצאות לפי קטגוריה</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="page-header">
+      <h2>הוצאות לפי קטגוריה</h2>
+    </header>
+
+    <div id="categories-container"></div>
+
+  </main>
+</div>
+
+<script src="core.js"></script>
+<script src="data-loader.js"></script>
+
+<script>
+loadCSVData().then(data => {
+  const model = buildMonthlyModel(data);
+
+  const categories = Object.entries(model.breakdown.expense)
+    .sort((a,b)=>b[1]-a[1])
+    .slice(0,5);
+
+  const container = document.getElementById("categories-container");
+
+  container.innerHTML = categories.map(([cat, val]) => {
+    const percent = model.percentages.expense[cat] || 0;
+
+    return `
+      <div style="background:#fff; padding:16px; margin-bottom:12px; border-radius:12px;">
+        <div style="display:flex; justify-content:space-between;">
+          <strong>${cat}</strong>
+          <span>${percent}%</span>
+        </div>
+        <div>${new Intl.NumberFormat('he-IL',{style:'currency',currency:'ILS'}).format(val)}</div>
+      </div>
+    `;
+  }).join("");
+
+});
+</script>
+
+</body>
 </html>
